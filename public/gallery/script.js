@@ -734,8 +734,8 @@ function handleViewModeChange() {
  * Update gallery view based on current mode
  */
 function updateGalleryView() {
-  // Remove all view classes
-  galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow');
+  // Remove all view classes (including the new Cards & Magazine views)
+  galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow', 'view-cards', 'view-featured');
   
   // Add current view class
   galleryView.classList.add(`view-${currentViewMode}`);
@@ -764,15 +764,21 @@ function initializeViewToggle() {
  */
 function loadViewMode() {
   const saved = localStorage.getItem('viewMode');
-  const validModes = ['grid', 'masonry', 'list', 'slideshow'];
+  const validModes = ['grid', 'masonry', 'list', 'slideshow', 'cards', 'featured'];
   if (saved && validModes.includes(saved)) {
     currentViewMode = saved;
   }
   updateViewToggleIcon();
   updateViewModeButtons();
   if (galleryView) {
-    galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow');
+    galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow', 'view-cards', 'view-featured');
     galleryView.classList.add(`view-${currentViewMode}`);
+  }
+  // Re-render the cards so view-specific markup (e.g. the featured hero card
+  // or the cards-view meta body) is applied. loadActresses() runs before this
+  // during init, so without this the cards keep their initial grid markup.
+  if (typeof actresses !== 'undefined' && actresses.length) {
+    displayActresses(filterActresses(searchBar ? searchBar.value : '', currentCategory));
   }
 }
 
@@ -780,8 +786,8 @@ function loadViewMode() {
  * Toggle view mode via header icon - cycles through all view modes
  */
 function toggleViewMode() {
-  // Cycle through view modes: grid -> masonry -> list -> slideshow -> grid
-  const viewModes = ['grid', 'masonry', 'list', 'slideshow'];
+  // Cycle through all view modes incl. the new Cards & Magazine (featured) views
+  const viewModes = ['grid', 'masonry', 'list', 'slideshow', 'cards', 'featured'];
   const currentIndex = viewModes.indexOf(currentViewMode);
   const nextIndex = (currentIndex + 1) % viewModes.length;
   const nextViewMode = viewModes[nextIndex];
@@ -811,9 +817,11 @@ function updateViewToggleIcon() {
   
   const icons = {
     'grid': 'fa-th',
-    'masonry': 'fa-th-large', 
+    'masonry': 'fa-th-large',
     'list': 'fa-list',
-    'slideshow': 'fa-play'
+    'slideshow': 'fa-play',
+    'cards': 'fa-id-card',
+    'featured': 'fa-newspaper'
   };
   
   const iconClass = icons[currentViewMode] || 'fa-th';
@@ -1039,6 +1047,7 @@ function handleKeyboardShortcuts(e) {
   }
   
   if (e.key === 'Escape') {
+    closeThemePalette();
     if (adminView.style.display !== 'none') {
       closeAdminPanel();
     }
@@ -2584,23 +2593,13 @@ function clearAllData() {
 // =============================================
 
 /**
- * Update theme setting
+ * Update theme setting (from the admin settings dropdown)
  */
 function updateThemeSetting() {
   const theme = document.getElementById('themeSetting').value;
-  if (theme === 'auto') {
-    localStorage.removeItem('theme');
-    document.body.classList.remove('night-mode');
-    document.getElementById('themeToggle').innerHTML = '<i class="fas fa-moon"></i>';
-  } else {
-    localStorage.setItem('theme', theme);
-    if (theme === 'dark') {
-      document.body.classList.add('night-mode');
-      document.getElementById('themeToggle').innerHTML = '<i class="fas fa-sun"></i>';
-    } else {
-      document.body.classList.remove('night-mode');
-      document.getElementById('themeToggle').innerHTML = '<i class="fas fa-moon"></i>';
-    }
+  if (THEMES.includes(theme)) {
+    applyTheme(theme);
+    showToast(capitalize(theme) + ' theme applied', 'info', 1800);
   }
 }
 
@@ -2825,37 +2824,81 @@ function displayActresses(list) {
     return;
   }
 
-  list.forEach(act => {
+  list.forEach((act, idx) => {
     const card = document.createElement('div');
     card.className = `card ${act.category}`;
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
     card.setAttribute('aria-label', `View ${act.name} details`);
 
-    card.innerHTML = `
-      ${act.views > 0 ? `
-        <div class="views-count">
-          <i class="fas fa-eye"></i> ${act.views}
-        </div>
-      ` : ''}
-      <img class="thumb" src="${act.thumb}" alt="${act.name} thumbnail" loading="lazy" decoding="async"
-           onerror="this.onerror=null;this.src='https://picsum.photos/seed/${encodeURIComponent(act.slug || act.name)}/300/240'">
-      <div class="name">${act.name}</div>
-      <div class="category-tag">${act.category}</div>
-      ${act.tags && act.tags.length > 0 ? `
-        <div class="card-tags">
-          ${act.tags.slice(0, 3).map(tag => `<span class="card-tag">${tag}</span>`).join('')}
-          ${act.tags.length > 3 ? `<span class="card-tag-more">+${act.tags.length - 3}</span>` : ''}
-        </div>
-      ` : ''}
+    const fallback = `https://picsum.photos/seed/${encodeURIComponent(act.slug || act.name)}/300/240`;
+    const tagsHtml = (act.tags && act.tags.length > 0) ? `
+      <div class="card-tags">
+        ${act.tags.slice(0, 3).map(tag => `<span class="card-tag">${tag}</span>`).join('')}
+        ${act.tags.length > 3 ? `<span class="card-tag-more">+${act.tags.length - 3}</span>` : ''}
+      </div>` : '';
+    const linksCountHtml = `
       <div class="links-count">
         <i class="fas fa-link"></i>
         ${act.websites.length} link${act.websites.length !== 1 ? 's' : ''}
-        • 
+        •
         <i class="fas fa-image"></i>
         ${act.gallery.length} photo${act.gallery.length !== 1 ? 's' : ''}
-      </div>
-    `;
+      </div>`;
+    const viewsBadgeHtml = act.views > 0 ? `
+      <div class="views-count">
+        <i class="fas fa-eye"></i> ${act.views}
+      </div>` : '';
+
+    // ---- Featured (magazine) view: first card is a hero ----
+    if (currentViewMode === 'featured' && idx === 0) {
+      card.classList.add('featured');
+      card.innerHTML = `
+        ${viewsBadgeHtml}
+        <img class="thumb" src="${act.thumb}" alt="${act.name} thumbnail" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}'">
+        <div class="featured-body">
+          <span class="featured-tag"><i class="fas fa-star"></i> Featured</span>
+          <div class="name">${act.name}</div>
+          <div class="category-tag">${act.category}</div>
+          <div class="featured-links">
+            <span><i class="fas fa-eye"></i> ${act.views || 0} views</span>
+            <span><i class="fas fa-image"></i> ${act.gallery.length} photos</span>
+            <span><i class="fas fa-link"></i> ${act.websites.length} links</span>
+          </div>
+          ${tagsHtml ? `<div class="featured-tags">${act.tags.slice(0,5).map(tag => `<span class="card-tag">${tag}</span>`).join('')}</div>` : ''}
+        </div>
+      `;
+    }
+    // ---- Cards view: larger card with meta body ----
+    else if (currentViewMode === 'cards') {
+      card.innerHTML = `
+        ${viewsBadgeHtml}
+        <img class="thumb" src="${act.thumb}" alt="${act.name} thumbnail" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${fallback}'">
+        <div class="name">${act.name}</div>
+        <div class="category-tag">${act.category}</div>
+        ${tagsHtml}
+        <div class="card-body">
+          <div class="card-meta-row">
+            <span><i class="fas fa-eye"></i> ${act.views || 0} views</span>
+            <span><i class="fas fa-image"></i> ${act.gallery.length} photos</span>
+            <span><i class="fas fa-link"></i> ${act.websites.length} links</span>
+          </div>
+        </div>
+        ${linksCountHtml}
+      `;
+    }
+    // ---- Default (grid / masonry / list / slideshow) ----
+    else {
+      card.innerHTML = `
+        ${viewsBadgeHtml}
+        <img class="thumb" src="${act.thumb}" alt="${act.name} thumbnail" loading="lazy" decoding="async"
+             onerror="this.onerror=null;this.src='${fallback}'">
+        <div class="name">${act.name}</div>
+        <div class="category-tag">${act.category}</div>
+        ${tagsHtml}
+        ${linksCountHtml}
+      `;
+    }
 
     // add quick action overlay
     const overlay = document.createElement('div');
@@ -3093,43 +3136,128 @@ function forceExternalLinksNewTab() {
 }
 
 /**
- * Initialize theme
+ * Initialize theme — multi-theme system.
+ * Supports: light, dark, ocean, sunset, rose, forest.
+ * The header / bottom-nav "Theme" buttons open a palette popover.
  */
+const THEMES = ['light', 'dark', 'ocean', 'sunset', 'rose', 'forest'];
+
 function initializeTheme() {
   const themeToggle = document.getElementById('themeToggle');
-  const savedTheme = localStorage.getItem('theme');
   const themeSetting = document.getElementById('themeSetting');
-  
-  if (savedTheme) {
+
+  // Migrate legacy 'night-mode' class users to the new data-theme system
+  const legacyNight = document.body.classList.contains('night-mode');
+  let savedTheme = localStorage.getItem('theme');
+  if (!savedTheme && legacyNight) savedTheme = 'dark';
+  if (!savedTheme) savedTheme = 'light';
+
+  applyTheme(savedTheme);
+
+  if (themeSetting && THEMES.includes(savedTheme)) {
     themeSetting.value = savedTheme;
   }
-  
-  if (savedTheme === 'dark') {
-    document.body.classList.add('night-mode');
-    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+
+  // Header button opens the palette popover
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      toggleThemePalette(this);
+    });
   }
-  
-  themeToggle.addEventListener('click', toggleTheme);
+
+  // Palette swatch clicks
+  const palette = document.getElementById('themePalette');
+  if (palette) {
+    palette.querySelectorAll('.theme-swatch').forEach(function (sw) {
+      sw.addEventListener('click', function (e) {
+        e.stopPropagation();
+        applyTheme(sw.dataset.theme);
+        closeThemePalette();
+        showToast(capitalize(sw.dataset.theme) + ' theme applied', 'info', 1800);
+      });
+    });
+  }
+
+  // Close palette on outside click / Escape
+  document.addEventListener('click', function (e) {
+    if (palette && palette.classList.contains('open') &&
+        !palette.contains(e.target) &&
+        !(themeToggle && themeToggle.contains(e.target))) {
+      closeThemePalette();
+    }
+  });
 }
 
 /**
- * Toggle theme between light and dark
+ * Apply a theme by name.
  */
-function toggleTheme() {
-  const body = document.body;
-  const themeToggle = document.getElementById('themeToggle');
-  const isNightMode = body.classList.toggle('night-mode');
-  
-  if (isNightMode) {
-    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-    localStorage.setItem('theme', 'dark');
-    showToast('Dark mode enabled', 'info', 2000);
+function applyTheme(theme) {
+  if (!THEMES.includes(theme)) theme = 'light';
+  document.body.setAttribute('data-theme', theme);
+  // Keep legacy night-mode class in sync for backward compatibility
+  if (theme === 'dark') {
+    document.body.classList.add('night-mode');
   } else {
-    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-    localStorage.setItem('theme', 'light');
-    showToast('Light mode enabled', 'info', 2000);
+    document.body.classList.remove('night-mode');
+  }
+  localStorage.setItem('theme', theme);
+  // Update palette active swatch
+  document.querySelectorAll('.theme-swatch').forEach(function (sw) {
+    sw.classList.toggle('active', sw.dataset.theme === theme);
+  });
+  // Update the settings dropdown if present
+  const themeSetting = document.getElementById('themeSetting');
+  if (themeSetting) themeSetting.value = theme;
+}
+
+/**
+ * Open / close the theme palette popover, anchored to the trigger button.
+ */
+function toggleThemePalette(triggerBtn) {
+  const palette = document.getElementById('themePalette');
+  if (!palette) return;
+  if (palette.classList.contains('open')) {
+    closeThemePalette();
+    return;
+  }
+  // Position relative to the trigger (desktop). Mobile CSS overrides to bottom sheet.
+  if (triggerBtn && window.innerWidth > 860) {
+    const r = triggerBtn.getBoundingClientRect();
+    const palW = 248;
+    let left = r.right - palW;
+    if (left < 12) left = 12;
+    palette.style.top = (r.bottom + 10) + 'px';
+    palette.style.left = left + 'px';
+    palette.style.right = 'auto';
+  } else {
+    palette.style.top = '';
+    palette.style.left = '';
+    palette.style.right = '';
+  }
+  palette.classList.add('open');
+  palette.setAttribute('aria-hidden', 'false');
+}
+
+function closeThemePalette() {
+  const palette = document.getElementById('themePalette');
+  if (palette) {
+    palette.classList.remove('open');
+    palette.setAttribute('aria-hidden', 'true');
   }
 }
+
+/**
+ * Backward-compatible toggle (cycles light <-> dark). Kept so any external
+ * callers still work, but the header button now opens the palette instead.
+ */
+function toggleTheme() {
+  const current = document.body.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+  showToast(capitalize(current === 'dark' ? 'light' : 'dark') + ' theme applied', 'info', 1800);
+}
+
+function capitalize(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
 
 /**
  * Initialize back to top button
@@ -3501,18 +3629,22 @@ document.addEventListener('DOMContentLoaded', () => {
       window.setTimeout(function () { btn.classList.remove('active'); }, 550);
     });
 
-    // ---- Keep the bottom-nav theme icon in sync with body.night-mode ----
-    const themeIcon = nav.querySelector('[data-action="theme"] i');
+    // ---- Keep the bottom-nav theme icon in sync with current theme ----
+    // The theme button always shows a palette icon now, but we tint it to the
+    // current theme's accent by syncing the data-theme attribute onto the button.
+    const themeBtnEl = nav.querySelector('[data-action="theme"]');
+    const themeIconEl = themeBtnEl ? themeBtnEl.querySelector('i') : null;
     function syncThemeIcon() {
-      if (!themeIcon) return;
-      themeIcon.className = document.body.classList.contains('night-mode')
-        ? 'fas fa-sun'
-        : 'fas fa-moon';
+      if (!themeBtnEl) return;
+      const currentTheme = document.body.getAttribute('data-theme') || 'light';
+      themeBtnEl.setAttribute('data-current-theme', currentTheme);
+      // Use a small dot/swatch indicator is overkill; just keep the palette icon.
+      if (themeIconEl) themeIconEl.className = 'fas fa-palette';
     }
     syncThemeIcon();
     if (typeof MutationObserver !== 'undefined') {
       const themeObserver = new MutationObserver(syncThemeIcon);
-      themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class', 'data-theme'] });
     }
 
     // ---- Keep the bottom-nav view icon in sync with #viewToggle ----

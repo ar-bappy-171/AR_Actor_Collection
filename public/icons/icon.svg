@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#d946ef"/>
+    </linearGradient>
+    <linearGradient id="reel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f1f5f9"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
+  <!-- Film reel -->
+  <g transform="translate(256 256)">
+    <!-- Outer reel ring -->
+    <circle r="138" fill="none" stroke="url(#reel)" stroke-width="26"/>
+    <!-- Center hub -->
+    <circle r="40" fill="url(#reel)"/>
+    <circle r="16" fill="#6366f1"/>
+    <!-- 6 perforation holes around the ring -->
+    <g fill="#6366f1">
+      <circle cx="0" cy="-100" r="18"/>
+      <circle cx="86.6" cy="-50" r="18"/>
+      <circle cx="86.6" cy="50" r="18"/>
+      <circle cx="0" cy="100" r="18"/>
+      <circle cx="-86.6" cy="50" r="18"/>
+      <circle cx="-86.6" cy="-50" r="18"/>
+    </g>
+  </g>
+  <!-- Subtle shine -->
+  <rect width="512" height="256" rx="112" ry="112" fill="#ffffff" opacity="0.08"/>
+</svg>

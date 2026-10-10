@@ -76,8 +76,8 @@
               <span class="icon-label">Admin</span>
             </button>
             <!-- Theme Toggle -->
-            <button id="themeToggle" class="header-icon-btn" aria-label="Toggle dark mode">
-              <i class="fas fa-moon"></i>
+            <button id="themeToggle" class="header-icon-btn" aria-label="Choose theme" title="Choose theme">
+              <i class="fas fa-palette"></i>
               <span class="icon-label">Theme</span>
             </button>
             <!-- Compact view toggle -->
@@ -178,6 +178,14 @@
           <button class="view-mode-btn" data-view="slideshow" title="Slideshow View">
             <i class="fas fa-play"></i>
             <span class="view-mode-text">Slideshow</span>
+          </button>
+          <button class="view-mode-btn" data-view="cards" title="Cards View">
+            <i class="fas fa-id-card"></i>
+            <span class="view-mode-text">Cards</span>
+          </button>
+          <button class="view-mode-btn" data-view="featured" title="Magazine View">
+            <i class="fas fa-newspaper"></i>
+            <span class="view-mode-text">Magazine</span>
           </button>
         </div>
       </div>
@@ -514,9 +522,12 @@
           <div class="form-group">
             <label>Theme</label>
             <select id="themeSetting">
-              <option value="auto">Auto (System)</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
+              <option value="ocean">Ocean</option>
+              <option value="sunset">Sunset</option>
+              <option value="rose">Rose</option>
+              <option value="forest">Forest</option>
             </select>
           </div>
           <div class="form-group">
@@ -598,8 +609,8 @@
         <i class="fas fa-plus"></i>
         <span class="mbn-label">Add</span>
       </button>
-      <button class="mbn-btn" data-action="theme" aria-label="Toggle dark mode" title="Toggle theme">
-        <i class="fas fa-moon"></i>
+      <button class="mbn-btn" data-action="theme" aria-label="Choose theme" title="Choose theme">
+        <i class="fas fa-palette"></i>
         <span class="mbn-label">Theme</span>
       </button>
       <button class="mbn-btn" data-action="admin" aria-label="Open admin panel" title="Admin panel">
@@ -607,6 +618,37 @@
         <span class="mbn-label">Admin</span>
       </button>
     </nav>
+
+    <!-- Theme Palette Popover (multi-theme picker) -->
+    <div id="themePalette" class="theme-palette" role="dialog" aria-label="Choose a theme" aria-hidden="true">
+      <div class="theme-palette-title">Choose Theme</div>
+      <div class="theme-swatches">
+        <button class="theme-swatch active" data-theme="light" aria-label="Light theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Light</span>
+        </button>
+        <button class="theme-swatch" data-theme="dark" aria-label="Dark theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Dark</span>
+        </button>
+        <button class="theme-swatch" data-theme="ocean" aria-label="Ocean theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Ocean</span>
+        </button>
+        <button class="theme-swatch" data-theme="sunset" aria-label="Sunset theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Sunset</span>
+        </button>
+        <button class="theme-swatch" data-theme="rose" aria-label="Rose theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Rose</span>
+        </button>
+        <button class="theme-swatch" data-theme="forest" aria-label="Forest theme">
+          <span class="theme-swatch-dot"></span>
+          <span class="theme-swatch-label">Forest</span>
+        </button>
+      </div>
+    </div>
 
     <footer class="site-footer">
       <div class="footer-content">

@@ -139,3 +139,48 @@ Stage Summary:
 - Theme + view icons auto-sync via MutationObservers; bar fades out during modals.
 - Comprehensive README.md documenting the whole project.
 - Browser-verified, lint-clean, no runtime errors.
+
+---
+Task ID: 7
+Agent: main (Z.ai Code)
+Task: Add PWA support (custom app icon, badge, installability), more themes, and more view styles.
+
+Work Log:
+**PWA — app icon, badge & installability:**
+- Generated a custom 1024x1024 app icon via the image-generation skill (film-reel motif on indigo→violet→fuchsia gradient). The service returned a JPEG; renamed to `icon-1024.jpg` and declared `type: "image/jpeg"` in the manifest so content-type matches (required for Chrome PWA install).
+- Hand-authored a crisp SVG icon (`public/icons/icon.svg`) — film reel on gradient rounded-square — for the browser-tab favicon/badge (scales perfectly at any size).
+- Created `public/manifest.json`: standalone display, theme_color #6366f1, background_color #0b1120, 6 icon entries (SVG any-purpose + JPG at 1024/512/192 as both any & maskable), and 3 app shortcuts (Search / Quick Add / Admin).
+- Created `public/sw.js` service worker: precaches the shell assets, network-first for navigation, stale-while-revalidate for static assets, cross-origin pass-through for picsum/CDN. Enables offline use + PWA installability.
+- Updated `src/app/layout.tsx`: linked manifest, added theme-color (light/dark), apple-touch-icon, apple-mobile-web-app-capable, mask-icon, multiple icon sizes; added `Viewport` export with themeColor + viewport-fit=cover.
+- Updated `src/app/page.tsx`: registers `/sw.js` on mount.
+
+**6 themes (was 2):**
+- Added 4 new themes via `body[data-theme="..."]` CSS variable overrides in `style.css`: **Ocean** (deep teal/cyan), **Sunset** (warm orange/pink), **Rose** (light pink), **Forest** (emerald). Each overrides primary/accent/background/card/border/shadow + category colors.
+- Kept `body.night-mode` working as a legacy alias; `data-theme="dark"` mirrors it.
+- Added a **theme palette popover** (`#themePalette`): 6 gradient swatches in a 3-col grid (6-col on mobile), active checkmark, scale-in animation. On desktop it anchors to the theme button; on mobile it's a bottom sheet above the nav.
+- Rewrote `initializeTheme`/`applyTheme`/`toggleThemePalette` in `script.js` to use `data-theme` attribute + localStorage; updated the settings dropdown; Escape closes the palette; the header Theme button + bottom-nav Theme button both open it.
+- Updated bottom-nav theme sync (now keeps the palette icon + tracks current theme via data attribute instead of swapping sun/moon).
+
+**6 view modes (was 4):**
+- Added **Cards** view (`.view-cards`): larger 280px min cards with a `.card-body` meta row (views/photos/links with icons).
+- Added **Magazine / Featured** view (`.view-featured`): the first card becomes a full-width hero (image left + info panel right with "Featured" badge, large name, category, stats, tags); remaining cards flow in a grid below. Stacks vertically on mobile (≤640px).
+- Added 2 new view-mode buttons (`fa-id-card` for Cards, `fa-newspaper` for Magazine) in `index.html`.
+- Updated `toggleViewMode`/`loadViewMode`/`updateViewToggleIcon`/`updateGalleryView` to include the new modes.
+- Refactored `displayActresses` to render view-specific markup (featured hero / cards meta body / default).
+- **Fixed an init-order bug:** `loadViewMode()` now re-calls `displayActresses()` after setting `currentViewMode`, so the featured hero / cards meta markup is applied on initial load (previously cards kept grid markup because `loadActresses` ran first with the default view).
+
+Verification (Agent Browser + VLM):
+- PWA head tags present: manifest, apple-touch-icon, theme-color (light/dark), icon links (SVG + JPG at 192/512/1024). ✅
+- Service worker registered (1 active, scope /). ✅
+- Icon loads (1024x1024, content-type image/jpeg). ✅
+- Theme palette opens with all 6 swatches; active checkmark on current theme. ✅
+- Applied Ocean (deep teal + cyan), Sunset (warm dark + orange), Rose (light pink) — all confirmed via `data-theme` attr + VLM color analysis. ✅
+- Cards view renders larger cards with meta row (views/photos/links). ✅
+- Magazine/Featured view renders the full-width hero card (image + info panel with Featured badge, name, stats) + grid below — confirmed on desktop & mobile. ✅
+- Lint clean; dev log clean (only a stale-cache 404 which was fixed by bumping SW cache version to v3 and updating precache URLs to .jpg).
+
+Stage Summary:
+- App is now an installable PWA with a custom film-reel icon (SVG + 1024 JPG), badge, manifest, service worker (offline), and app shortcuts.
+- 6 themes (Light, Dark, Ocean, Sunset, Rose, Forest) selectable via a palette popover.
+- 6 view modes (Grid, Masonry, List, Slideshow, Cards, Magazine).
+- README updated with PWA, themes, and view-modes documentation.

@@ -1,0 +1,75 @@
+{
+  "name": "Actress Gallery",
+  "short_name": "Gallery",
+  "description": "Browse and manage your favorite actresses with an elegant gallery interface.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b1120",
+  "theme_color": "#6366f1",
+  "categories": ["entertainment", "lifestyle"],
+  "lang": "en",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-1024.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-1024.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Search",
+      "short_name": "Search",
+      "description": "Search actresses",
+      "url": "/?action=search",
+      "icons": [{ "src": "/icons/icon-1024.jpg", "sizes": "192x192", "type": "image/jpeg" }]
+    },
+    {
+      "name": "Quick Add",
+      "short_name": "Add",
+      "description": "Add a new actress",
+      "url": "/?action=add",
+      "icons": [{ "src": "/icons/icon-1024.jpg", "sizes": "192x192", "type": "image/jpeg" }]
+    },
+    {
+      "name": "Admin Panel",
+      "short_name": "Admin",
+      "description": "Open the admin panel",
+      "url": "/?action=admin",
+      "icons": [{ "src": "/icons/icon-1024.jpg", "sizes": "192x192", "type": "image/jpeg" }]
+    }
+  ]
+}
