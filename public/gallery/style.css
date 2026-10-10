@@ -1577,6 +1577,11 @@ body.night-mode .platform-option:nth-child(3) i { color: #fff; }
 .back-to-top.visible { opacity: 1; visibility: visible; }
 .back-to-top:hover { transform: translateY(-3px) scale(1.08); box-shadow: var(--shadow-hover); }
 
+/* ---------- Mobile Quick-Access Bottom Navigation ---------- */
+.mobile-bottom-nav {
+  display: none; /* hidden on desktop; shown on mobile via media query */
+}
+
 /* Backdrop */
 .panel-backdrop {
   position: fixed;
@@ -1748,6 +1753,86 @@ body[data-card-size="large"] .card { transform: scale(1.06); }
 
   .toast-container { left: 12px; right: 12px; top: 12px; max-width: none; }
   .toast { min-width: 0; width: 100%; }
+
+  /* ---- Mobile quick-access bottom navigation (glass bar) ---- */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 95;
+    background: var(--header-bg);
+    backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    border-top: 1px solid var(--header-border);
+    padding: 6px 6px max(6px, env(safe-area-inset-bottom, 6px));
+    justify-content: space-around;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 -10px 30px -14px rgba(15, 23, 42, 0.22);
+  }
+  .mbn-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 7px 2px 5px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+    min-height: 48px; /* touch target */
+    transition: color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mbn-btn .mbn-label { letter-spacing: 0.01em; }
+  .mbn-btn i { font-size: 18px; transition: transform var(--dur) var(--ease); }
+  .mbn-btn:active { transform: scale(0.9); }
+  .mbn-btn:hover { color: var(--primary-color); background: var(--primary-softer); }
+  .mbn-btn.active { color: var(--primary-color); background: var(--primary-soft); }
+
+  /* Elevated center Add button */
+  .mbn-btn.mbn-add {
+    flex: 0 0 auto;
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    margin-top: -24px;
+    background: var(--accent-grad);
+    color: #fff;
+    box-shadow: 0 10px 22px -8px var(--primary-ring), 0 0 0 4px var(--header-bg);
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+    position: relative;
+  }
+  .mbn-btn.mbn-add i { font-size: 22px; }
+  .mbn-btn.mbn-add .mbn-label {
+    position: absolute;
+    bottom: -16px;
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .mbn-btn.mbn-add:hover {
+    color: #fff;
+    background: var(--accent-grad);
+    transform: translateY(-3px);
+    box-shadow: 0 14px 26px -8px var(--primary-ring), 0 0 0 4px var(--header-bg);
+  }
+  .mbn-btn.mbn-add:active { transform: scale(0.92); }
+
+  /* Lift content above the bottom nav so nothing is hidden */
+  .app-main { padding-bottom: 96px; }
+  .site-footer { padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 24px) + 80px)); }
+  /* Move back-to-top above the bottom nav */
+  .back-to-top { bottom: 88px; }
 }
 
 /* Phone (≤480px) */
@@ -1798,7 +1883,7 @@ body[data-card-size="large"] .card { transform: scale(1.06); }
   .quick-add-tabs { overflow-x: auto; }
   .quick-add-tabs .tab-btn { white-space: nowrap; }
 
-  .back-to-top { bottom: 16px; right: 16px; width: 44px; height: 44px; font-size: 14px; }
+  .back-to-top { bottom: 84px; right: 14px; width: 44px; height: 44px; font-size: 14px; }
   .footer-content p { font-size: 0.78rem; }
   .footer-links { gap: 12px; }
   .footer-link { font-size: 0.78rem; }
@@ -1808,6 +1893,12 @@ body[data-card-size="large"] .card { transform: scale(1.06); }
   .stat-number { font-size: 1.6rem; }
   .charts-section { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Slightly compact bottom nav on phones */
+  .mbn-btn { font-size: 9px; padding: 6px 2px 4px; }
+  .mbn-btn i { font-size: 17px; }
+  .mbn-btn.mbn-add { width: 54px; height: 54px; margin-top: -22px; }
+  .mbn-btn.mbn-add i { font-size: 20px; }
 }
 
 /* Very small (≤360px) */

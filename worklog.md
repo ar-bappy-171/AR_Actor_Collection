@@ -104,3 +104,38 @@ Work Log:
 Stage Summary:
 - Browser-verified, interactive, runnable. Lint clean. No runtime errors.
 - UI/UX enhancement complete for desktop, tablet, and mobile.
+
+---
+Task ID: 6
+Agent: main (Z.ai Code)
+Task: Add a mobile quick-access bottom navigation bar (glass style) with 5 icons (view toggle, search, add, theme, admin) and write a README.md.
+
+Work Log:
+- Added `.mobile-bottom-nav` HTML to `public/gallery/index.html` — a `<nav>` with 5 `.mbn-btn` buttons (view, search, add [elevated center], theme, admin) each with icon + label, placed before the footer.
+- Added bottom-nav CSS in `public/gallery/style.css`:
+  - Base: `.mobile-bottom-nav { display: none }` (hidden on desktop).
+  - Inside `@media (max-width: 860px)`: glassmorphism fixed bar (backdrop-blur 18px, translucent header-bg, top border, top-shadow), 5 evenly-spaced buttons, 48px min-height touch targets, active/hover states.
+  - Elevated center Add button: 58px circle, gradient background, negative margin-top to lift above the bar, ring cutout using `0 0 0 4px var(--header-bg)`, lift on hover.
+  - Spacing fixes: `.app-main { padding-bottom: 96px }`, `.site-footer { padding-bottom: max(24px, env+80px) }`, `.back-to-top { bottom: 88px }`.
+  - `@media (max-width: 480px)`: compact bottom nav (smaller icons, 54px Add button), back-to-top `bottom: 84px`.
+- Appended `setupBottomNav()` IIFE to `public/gallery/script.js`:
+  - Click delegation: each bottom-nav button calls `document.getElementById(targetId).click()` to reuse ALL existing handlers (toggleViewMode, toggleSearchPanel, openQuickAddModal, toggleTheme, openAdminPanel).
+  - `e.stopPropagation()` on the bottom-nav click to prevent `closePanelsOnOutsideClick` from re-closing a just-opened panel (this was the root cause of an initial bug where Search wouldn't stay open).
+  - MutationObserver on `body.class` to keep the bottom-nav theme icon (sun/moon) in sync with dark-mode toggles from any source.
+  - MutationObserver on `#viewToggle` to mirror the current view-mode icon to the bottom nav.
+  - Per-modal MutationObserver that fades + slides the bottom nav down while a modal is open (cleaner overlay UX).
+- Wrote `/home/z/my-project/README.md` (comprehensive): features, project structure, getting started, scripts, design system (color palette, category colors, breakpoints), keyboard shortcuts, mobile bottom-nav documentation, data model, architecture notes, tech stack.
+
+Verification (Agent Browser + VLM):
+- Confirmed bottom nav hidden on desktop (1440px), visible on mobile (390px) — VLM verified 5 icons + elevated center Add button, "very polished and smart".
+- Tested each button: Add opens Quick Add modal (bottom-sheet on mobile) ✅; Admin opens Admin panel with all 5 tabs ✅; View cycles grid→masonry with toast ✅; Search opens dropdown (after the stopPropagation fix) ✅; Theme toggles dark mode with sun/moon icon sync ✅.
+- Verified footer CONTENT (text + links) sits fully above the bottom nav (footer-content bottom=764, nav top=783 → 19px gap, no overlap).
+- Verified back-to-top button positioned above the bottom nav on mobile.
+- Verified theme icon sync: tapping bottom-nav theme updates BOTH header and bottom-nav icons to sun (MutationObserver working).
+- Dev log clean (all 200 responses, no runtime errors); `bun run lint` passes.
+
+Stage Summary:
+- New mobile glass bottom nav with 5 quick-access icons + elevated center Add button, fully wired to existing handlers.
+- Theme + view icons auto-sync via MutationObservers; bar fades out during modals.
+- Comprehensive README.md documenting the whole project.
+- Browser-verified, lint-clean, no runtime errors.

@@ -3458,3 +3458,99 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
   }
 })();
+
+// =============================================
+// MOBILE QUICK-ACCESS BOTTOM NAVIGATION
+// =============================================
+// A glass bar pinned to the bottom of the screen on mobile with 5 quick
+// actions: view toggle, search, add (elevated center), theme, admin.
+// Each tap delegates to the corresponding header button so all existing
+// handlers (modals, toasts, panel toggles, theme icon swap) are reused.
+(function setupBottomNav() {
+  function init() {
+    const nav = document.querySelector('.mobile-bottom-nav');
+    if (!nav) return;
+
+    // Map bottom-nav action -> header button id to delegate to
+    const targets = {
+      view: 'viewToggle',
+      search: 'searchToggle',
+      add: 'quickAdd',
+      theme: 'themeToggle',
+      admin: 'adminToggle',
+    };
+
+    nav.addEventListener('click', function (e) {
+      const btn = e.target.closest('.mbn-btn');
+      if (!btn) return;
+      // Stop the original bottom-nav click from bubbling to `document`,
+      // otherwise `closePanelsOnOutsideClick` would immediately re-close any
+      // panel we just opened (because the bottom-nav button is "outside"
+      // the panel/toggle).
+      e.stopPropagation();
+      const action = btn.dataset.action;
+      const targetId = targets[action];
+      const target = targetId && document.getElementById(targetId);
+      if (target) {
+        // Defer the actual click so the tap feedback (active class) renders
+        // first for snappier perceived performance.
+        target.click();
+      }
+      // Brief visual feedback
+      btn.classList.add('active');
+      window.setTimeout(function () { btn.classList.remove('active'); }, 550);
+    });
+
+    // ---- Keep the bottom-nav theme icon in sync with body.night-mode ----
+    const themeIcon = nav.querySelector('[data-action="theme"] i');
+    function syncThemeIcon() {
+      if (!themeIcon) return;
+      themeIcon.className = document.body.classList.contains('night-mode')
+        ? 'fas fa-sun'
+        : 'fas fa-moon';
+    }
+    syncThemeIcon();
+    if (typeof MutationObserver !== 'undefined') {
+      const themeObserver = new MutationObserver(syncThemeIcon);
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // ---- Keep the bottom-nav view icon in sync with #viewToggle ----
+    const viewIcon = nav.querySelector('[data-action="view"] i');
+    const headerViewToggle = document.getElementById('viewToggle');
+    function syncViewIcon() {
+      if (!viewIcon || !headerViewToggle) return;
+      const headerIcon = headerViewToggle.querySelector('i');
+      if (headerIcon) {
+        viewIcon.className = headerIcon.className;
+      }
+    }
+    syncViewIcon();
+    if (typeof MutationObserver !== 'undefined' && headerViewToggle) {
+      const viewObserver = new MutationObserver(syncViewIcon);
+      viewObserver.observe(headerViewToggle, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Hide the bottom nav while a modal is open (cleaner overlay UX)
+    document.querySelectorAll('.modal').forEach(function (modal) {
+      const observer = new MutationObserver(function () {
+        if (modal.classList.contains('active')) {
+          nav.style.opacity = '0';
+          nav.style.pointerEvents = 'none';
+          nav.style.transform = 'translateY(20px)';
+        } else {
+          nav.style.opacity = '';
+          nav.style.pointerEvents = '';
+          nav.style.transform = '';
+        }
+      });
+      observer.observe(modal, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
