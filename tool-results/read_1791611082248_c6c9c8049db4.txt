@@ -1,0 +1,2002 @@
+     1→     1→// =============================================
+     2→     2→// CONFIGURATION & CONSTANTS
+     3→     3→// =============================================
+     4→     4→const ACTRESSES_INDEX = 'actresses.json';
+     5→     5→const BASE_ACTRESS_PATH = 'images/actresses';
+     6→     6→
+     7→     7→// Global State Variables
+     8→     8→let searchBar, actressList, app, adminView, galleryView;
+     9→     9→let categoryButtons = [];
+    10→    10→let currentCategory = 'all';
+    11→    11→let actresses = [];
+    12→    12→let selectedActresses = new Set();
+    13→    13→let currentViewMode = 'grid';
+    14→    14→let searchTimeout = null;
+    15→    15→let editingSlug = null;
+    16→    16→
+    17→    17→// Runtime error guard to add an on-screen banner on uncaught errors
+    18→    18→let __runtimeErrorBannerShown = false;
+    19→    19→function showRuntimeErrorBanner(msg) {
+    20→    20→  try {
+    21→    21→    if (__runtimeErrorBannerShown) return;
+    22→    22→    __runtimeErrorBannerShown = true;
+    23→    23→    const banner = document.createElement('div');
+    24→    24→    banner.style.cssText = 'background:#ffefef;color:#990000;padding:12px;border:1px solid #ffcccc;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:12000;border-radius:6px;max-width:92%;text-align:center;';
+    25→    25→    banner.textContent = 'An unexpected error occurred: ' + (msg || 'See console for details');
+    26→    26→    document.body.appendChild(banner);
+    27→    27→    console.error('Runtime error shown to user:', msg);
+    28→    28→  } catch (e) {
+    29→    29→    console.error('Failed to show runtime error banner:', e);
+    30→    30→  }
+    31→    31→}
+    32→    32→
+    33→    33→window.addEventListener('error', (e) => {
+    34→    34→  showRuntimeErrorBanner(e.message || e.error || 'Unknown error');
+    35→    35→});
+    36→    36→
+    37→    37→window.addEventListener('unhandledrejection', (e) => {
+    38→    38→  showRuntimeErrorBanner(e.reason && (e.reason.message || e.reason.toString()) || 'Unhandled promise rejection');
+    39→    39→});
+    40→    40→
+    41→    41→// Enhanced icon mapping for social platforms
+    42→    42→const iconMap = {
+    43→    43→  'official': 'fa-globe',
+    44→    44→  'instagram': 'fa-instagram',
+    45→    45→  'twitter': 'fa-twitter',
+    46→    46→  'wikipedia': 'fa-wikipedia-w',
+    47→    47→  'facebook': 'fa-facebook',
+    48→    48→  'youtube': 'fa-youtube',
+    49→    49→  'mega': 'fa-cloud',
+    50→    50→  'reddit': 'fa-reddit',
+    51→    51→  'tiktok': 'fa-tiktok',
+    52→    52→  'onlyfans': 'fa-crown',
+    53→    53→  'default': 'fa-link'
+    54→    54→};
+    55→    55→
+    56→    56→// Platform detection patterns
+    57→    57→const platformPatterns = {
+    58→    58→  'instagram': /instagram\.com/,
+    59→    59→  'twitter': /twitter\.com|x\.com/,
+    60→    60→  'youtube': /youtube\.com|youtu\.be/,
+    61→    61→  'tiktok': /tiktok\.com/,
+    62→    62→  'onlyfans': /onlyfans\.com/,
+    63→    63→  'reddit': /reddit\.com/
+    64→    64→};
+    65→    65→
+    66→    66→// =============================================
+    67→    67→// APPLICATION INITIALIZATION
+    68→    68→// =============================================
+    69→    69→
+    70→    70→/**
+    71→    71→ * Initialize the application when DOM is loaded
+    72→    72→ */
+    73→    73→function initializeApp() {
+    74→    74→  console.log('initializeApp: start');
+    75→    75→  showLoadingScreen();
+    76→    76→  initializeDOMElements();
+    77→    77→  console.log('initializeApp: DOM elements initialized');
+    78→    78→  attachEventListeners();
+    79→    79→  // Ensure event listeners for actionable header icons are attached even
+    80→    80→  // if some DOM nodes are dynamically replaced or added later.
+    81→    81→  try {
+    82→    82→    attachQuickActionListeners();
+    83→    83→  } catch (err) {
+    84→    84→    console.warn('Failed to re-attach quick action listeners:', err);
+    85→    85→  }
+    86→    86→  console.log('initializeApp: event listeners attached');
+    87→    87→  loadActresses();
+    88→    88→  console.log('initializeApp: actresses loaded');
+    89→    89→  initializeViewToggle();
+    90→    90→  console.log('initializeApp: view toggle initialized');
+    91→    91→  initializeTheme();
+    92→    92→  applySavedPreferences();
+    93→    93→  console.log('initializeApp: theme initialized');
+    94→    94→  initializeBackToTop();
+    95→    95→  console.log('initializeApp: back-to-top initialized');
+    96→    96→  forceExternalLinksNewTab();
+    97→    97→  console.log('initializeApp: set external links behavior');
+    98→    98→  updateStats();
+    99→    99→  // Ensure view-mode container is hidden after returning to list
+   100→   100→  const v = document.getElementById('viewModeContainer');
+   101→   101→  if (v) {
+   102→   102→    v.classList.add('hidden');
+   103→   103→    v.setAttribute('aria-hidden', 'true');
+   104→   104→  }
+   105→   105→  // Also close any overlay panels and backdrop
+   106→   106→  ['searchSection', 'advancedFilters'].forEach(id => {
+   107→   107→    const panel = document.getElementById(id);
+   108→   108→    const btn = document.getElementById(getToggleForPanelId(id));
+   109→   109→    if (panel && !panel.classList.contains('hidden')) {
+   110→   110→      panel.classList.add('hidden');
+   111→   111→      panel.setAttribute('aria-hidden', 'true');
+   112→   112→    }
+   113→   113→    if (btn) {
+   114→   114→      btn.setAttribute('aria-expanded', 'false');
+   115→   115→      btn.classList.remove('active');
+   116→   116→    }
+   117→   117→  });
+   118→   118→  const bd = document.getElementById('panelBackdrop');
+   119→   119→  if (bd) bd.classList.add('hidden');
+   120→   120→  // Sync view mode buttons with currentViewMode to ensure active state
+   121→   121→  updateViewModeButtons();
+   122→   122→  console.log('initializeApp: stats updated');
+   123→   123→  loadViewMode();
+   124→   124→  console.log('initializeApp: view mode loaded');
+   125→   125→  hideLoadingScreen();
+   126→   126→  console.log('initializeApp: hideLoadingScreen called');
+   127→   127→}
+   128→   128→
+   129→   129→/**
+   130→   130→ * Apply saved UI preferences (compact cards etc.)
+   131→   131→ */
+   132→   132→function applySavedPreferences() {
+   133→   133→  const compact = localStorage.getItem('compactCards');
+   134→   134→  if (compact === 'true') {
+   135→   135→    document.body.classList.add('compact-cards');
+   136→   136→    const btn = document.getElementById('compactToggle');
+   137→   137→    if (btn) btn.setAttribute('aria-pressed', 'true');
+   138→   138→  }
+   139→   139→}
+   140→   140→
+   141→   141→/**
+   142→   142→ * Show loading screen
+   143→   143→ */
+   144→   144→function showLoadingScreen() {
+   145→   145→  const loadingScreen = document.getElementById('loadingScreen');
+   146→   146→  if (loadingScreen) {
+   147→   147→    loadingScreen.classList.remove('hidden');
+   148→   148→    loadingScreen.style.display = 'flex';
+   149→   149→  }
+   150→   150→}
+   151→   151→
+   152→   152→/**
+   153→   153→ * Hide loading screen
+   154→   154→ */
+   155→   155→function hideLoadingScreen() {
+   156→   156→  const loadingScreen = document.getElementById('loadingScreen');
+   157→   157→  if (loadingScreen) {
+   158→   158→    setTimeout(() => {
+   159→   159→      loadingScreen.classList.add('hidden');
+   160→   160→      setTimeout(() => {
+   161→   161→        loadingScreen.style.display = 'none';
+   162→   162→      }, 500);
+   163→   163→    }, 500);
+   164→   164→  }
+   165→   165→}
+   166→   166→
+   167→   167→/**
+   168→   168→ * Initialize DOM element references
+   169→   169→ */
+   170→   170→function initializeDOMElements() {
+   171→   171→  searchBar = document.getElementById('searchBar');
+   172→   172→  actressList = document.getElementById('actressList');
+   173→   173→  app = document.getElementById('app');
+   174→   174→  adminView = document.getElementById('adminView');
+   175→   175→  galleryView = document.getElementById('galleryView');
+   176→   176→  categoryButtons = document.querySelectorAll('.filter-tag'); // Fixed: changed from .category-btn to .filter-tag
+   177→   177→  // Panels
+   178→   178→  window.searchSection = document.getElementById('searchSection');
+   179→   179→  window.advancedFilters = document.getElementById('advancedFilters');
+   180→   180→  window.viewModeContainer = document.getElementById('viewModeContainer');
+   181→   181→  // Debug: log existence of new toggle buttons and panels
+   182→   182→  console.log('DOM elements: searchToggle=', !!document.getElementById('searchToggle'),
+   183→   183→              'filtersToggle=', !!document.getElementById('filtersToggle'));
+   184→   184→}
+   185→   185→
+   186→   186→// =============================================
+   187→   187→// EVENT LISTENERS SETUP
+   188→   188→// =============================================
+   189→   189→
+   190→   190→/**
+   191→   191→ * Attach all event listeners
+   192→   192→ */
+   193→   193→function attachEventListeners() {
+   194→   194→  attachCategoryFilterListeners();
+   195→   195→  attachSearchListeners();
+   196→   196→  attachViewModeListeners();
+   197→   197→  attachCategoryInputListeners();
+   198→   198→  attachQuickActionListeners();
+   199→   199→  attachModalListeners();
+   200→   200→  attachImageViewerListeners();
+   201→   201→  attachKeyboardShortcuts();
+   202→   202→  attachContextMenuListeners();
+   203→   203→  attachAdminPanelListeners();
+   204→   204→  attachFormListeners();
+   205→   205→  attachManageListeners();
+   206→   206→  attachImportExportListeners();
+   207→   207→  attachSettingsListeners();
+   208→   208→}
+   209→   209→
+   210→   210→/**
+   211→   211→ * Attach category filter event listeners
+   212→   212→ */
+   213→   213→function attachCategoryFilterListeners() {
+   214→   214→  categoryButtons.forEach(button => {
+   215→   215→    button.addEventListener('click', handleCategoryChange);
+   216→   216→  });
+   217→   217→}
+   218→   218→
+   219→   219→/**
+   220→   220→ * Attach search functionality listeners
+   221→   221→ */
+   222→   222→function attachSearchListeners() {
+   223→   223→  if (searchBar) {
+   224→   224→    searchBar.addEventListener('input', handleSearch);
+   225→   225→    searchBar.addEventListener('keydown', (e) => {
+   226→   226→      if (e.key === 'Escape') {
+   227→   227→        searchBar.value = '';
+   228→   228→        displayActresses(filterActresses('', currentCategory));
+   229→   229→        updateSearchResultsCount();
+   230→   230→      }
+   231→   231→      if (e.key === 'Enter') {
+   232→   232→        // Save to history
+   233→   233→        saveSearchHistory(searchBar.value.trim());
+   234→   234→      }
+   235→   235→    });
+   236→   236→    searchBar.addEventListener('focus', showSearchSuggestions);
+   237→   237→    searchBar.addEventListener('blur', () => setTimeout(hideSearchSuggestions, 200));
+   238→   238→  }
+   239→   239→}
+   240→   240→
+   241→   241→function saveSearchHistory(q) {
+   242→   242→  if (!q) return;
+   243→   243→  try {
+   244→   244→    const key = 'searchHistory';
+   245→   245→    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+   246→   246→    const newArr = [q, ...existing.filter(s => s !== q)].slice(0, 5);
+   247→   247→    localStorage.setItem(key, JSON.stringify(newArr));
+   248→   248→  } catch (e) {
+   249→   249→    console.warn('saveSearchHistory error:', e);
+   250→   250→  }
+   251→   251→}
+   252→   252→
+   253→   253→function showSearchSuggestions() {
+   254→   254→  const el = document.getElementById('searchSuggestions');
+   255→   255→  if (!el) return;
+   256→   256→  const key = 'searchHistory';
+   257→   257→  const items = JSON.parse(localStorage.getItem(key) || '[]');
+   258→   258→  if (!items.length) { el.classList.add('hidden'); return; }
+   259→   259→  el.innerHTML = items.map(s => `<div class="suggestion-item" data-value="${s}">${s}</div>`).join('');
+   260→   260→  el.classList.remove('hidden');
+   261→   261→  // Attach click handlers to suggestions
+   262→   262→  el.querySelectorAll('.suggestion-item').forEach(node => {
+   263→   263→    node.addEventListener('click', () => {
+   264→   264→      const val = node.getAttribute('data-value');
+   265→   265→      const sb = document.getElementById('searchBar');
+   266→   266→      if (sb) { sb.value = val; handleSearch({target: {value: val}}); }
+   267→   267→      hideSearchSuggestions();
+   268→   268→    });
+   269→   269→  });
+   270→   270→}
+   271→   271→
+   272→   272→function hideSearchSuggestions() {
+   273→   273→  const el = document.getElementById('searchSuggestions');
+   274→   274→  if (el) el.classList.add('hidden');
+   275→   275→}
+   276→   276→
+   277→   277→/**
+   278→   278→ * Attach view mode toggle listeners
+   279→   279→ */
+   280→   280→function attachViewModeListeners() {
+   281→   281→  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+   282→   282→    btn.addEventListener('click', handleViewModeChange);
+   283→   283→  });
+   284→   284→}
+   285→   285→
+   286→   286→/**
+   287→   287→ * Attach category input functionality listeners
+   288→   288→ */
+   289→   289→function attachCategoryInputListeners() {
+   290→   290→  const categoryInput = document.getElementById('actressCategory');
+   291→   291→  if (categoryInput) {
+   292→   292→    categoryInput.addEventListener('input', handleCategoryInput);
+   293→   293→    categoryInput.addEventListener('keydown', handleCategoryInput);
+   294→   294→    categoryInput.addEventListener('focus', showCategorySuggestions);
+   295→   295→    categoryInput.addEventListener('blur', () => {
+   296→   296→      setTimeout(hideCategorySuggestions, 200);
+   297→   297→    });
+   298→   298→  }
+   299→   299→}
+   300→   300→
+   301→   301→/**
+   302→   302→ * Attach quick action button listeners
+   303→   303→ */
+   304→   304→function attachQuickActionListeners() {
+   305→   305→  const quickAddBtn = document.getElementById('quickAdd');
+   306→   306→  if (quickAddBtn) quickAddBtn.addEventListener('click', openQuickAddModal);
+   307→   307→
+   308→   308→  const batchActionsBtn = document.getElementById('batchActions');
+   309→   309→  if (batchActionsBtn) batchActionsBtn.addEventListener('click', openBatchActions);
+   310→   310→
+   311→   311→  const exportBtn = document.getElementById('exportBtn');
+   312→   312→  if (exportBtn) exportBtn.addEventListener('click', exportData);
+   313→   313→
+   314→   314→  // New toggle buttons for panels
+   315→   315→  const searchToggle = document.getElementById('searchToggle');
+   316→   316→  let searchListenerAttached = false;
+   317→   317→  if (searchToggle) {
+   318→   318→    try {
+   319→   319→      searchToggle.addEventListener('click', toggleSearchPanel);
+   320→   320→      searchListenerAttached = true;
+   321→   321→    } catch (e) {
+   322→   322→      console.warn('Unable to attach search toggle listener', e);
+   323→   323→    }
+   324→   324→  } else {
+   325→   325→    console.warn('No #searchToggle element found');
+   326→   326→  }
+   327→   327→
+   328→   328→  const filtersToggle = document.getElementById('filtersToggle');
+   329→   329→  let filtersListenerAttached = false;
+   330→   330→  if (filtersToggle) {
+   331→   331→    try {
+   332→   332→      filtersToggle.addEventListener('click', toggleFiltersPanel);
+   333→   333→      filtersListenerAttached = true;
+   334→   334→    } catch (e) {
+   335→   335→      console.warn('Unable to attach filters toggle listener', e);
+   336→   336→    }
+   337→   337→  } else {
+   338→   338→    console.warn('No #filtersToggle element found');
+   339→   339→  }
+   340→   340→
+   341→   341→  // Fallback: if for some reason we couldn't attach listeners to specific buttons
+   342→   342→  // (for example due to dynamic DOM replacements), attach delegated handlers to document
+   343→   343→  if (!searchListenerAttached) {
+   344→   344→    document.addEventListener('click', (e) => {
+   345→   345→      const t = e.target.closest('#searchToggle');
+   346→   346→      if (t) toggleSearchPanel(e);
+   347→   347→    });
+   348→   348→  }
+   349→   349→  if (!filtersListenerAttached) {
+   350→   350→    document.addEventListener('click', (e) => {
+   351→   351→      const t = e.target.closest('#filtersToggle');
+   352→   352→      if (t) toggleFiltersPanel(e);
+   353→   353→    });
+   354→   354→  }
+   355→   355→  // viewPanelToggle removed — no delegated handler required
+   356→   356→  const compactToggle = document.getElementById('compactToggle');
+   357→   357→  if (compactToggle) {
+   358→   358→    compactToggle.addEventListener('click', (e) => {
+   359→   359→      e.preventDefault();
+   360→   360→      const active = document.body.classList.toggle('compact-cards');
+   361→   361→      compactToggle.setAttribute('aria-pressed', active ? 'true' : 'false');
+   362→   362→      localStorage.setItem('compactCards', active ? 'true' : 'false');
+   363→   363→      showToast(`Compact cards ${active ? 'enabled' : 'disabled'}`, 'info', 1200);
+   364→   364→    });
+   365→   365→  }
+   366→   366→}
+   367→   367→
+   368→   368→/**
+   369→   369→ * Attach modal functionality listeners
+   370→   370→ */
+   371→   371→function attachModalListeners() {
+   372→   372→  document.querySelectorAll('.modal-close').forEach(btn => {
+   373→   373→    if (btn) btn.addEventListener('click', closeModals);
+   374→   374→  });
+   375→   375→
+   376→   376→  document.getElementById('quickAddModal').addEventListener('click', (e) => {
+   377→   377→    if (e.target === e.currentTarget) closeModals();
+   378→   378→  });
+   379→   379→
+   380→   380→  // Quick add tabs
+   381→   381→  document.querySelectorAll('.quick-add-tabs .tab-btn').forEach(btn => {
+   382→   382→    if (btn) btn.addEventListener('click', (e) => {
+   383→   383→      switchQuickAddTab(e.target.dataset.tab);
+   384→   384→    });
+   385→   385→  });
+   386→   386→}
+   387→   387→
+   388→   388→/**
+   389→   389→ * Attach image viewer listeners
+   390→   390→ */
+   391→   391→function attachImageViewerListeners() {
+   392→   392→  const imageViewer = document.getElementById('imageViewer');
+   393→   393→  if (imageViewer) {
+   394→   394→    imageViewer.addEventListener('click', (e) => {
+   395→   395→      if (e.target === e.currentTarget) closeModals();
+   396→   396→    });
+   397→   397→  }
+   398→   398→
+   399→   399→  const viewerClose = document.querySelector('.image-viewer-close');
+   400→   400→  if (viewerClose) viewerClose.addEventListener('click', closeModals);
+   401→   401→
+   402→   402→  const prevBtn = document.querySelector('.image-nav.prev');
+   403→   403→  if (prevBtn) prevBtn.addEventListener('click', showPreviousImage);
+   404→   404→
+   405→   405→  const nextBtn = document.querySelector('.image-nav.next');
+   406→   406→  if (nextBtn) nextBtn.addEventListener('click', showNextImage);
+   407→   407→}
+   408→   408→
+   409→   409→/**
+   410→   410→ * Attach keyboard shortcut listeners
+   411→   411→ */
+   412→   412→function attachKeyboardShortcuts() {
+   413→   413→  document.addEventListener('keydown', handleKeyboardShortcuts);
+   414→   414→}
+   415→   415→
+   416→   416→/**
+   417→   417→ * Attach context menu listeners
+   418→   418→ */
+   419→   419→function attachContextMenuListeners() {
+   420→   420→  document.addEventListener('contextmenu', handleContextMenu);
+   421→   421→  document.addEventListener('click', (e) => {
+   422→   422→    hideContextMenu();
+   423→   423→    // Close toggle panels if click outside them
+   424→   424→    closePanelsOnOutsideClick(e);
+   425→   425→  });
+   426→   426→
+   427→   427→  // Backdrop click: hide panels
+   428→   428→  const bd = document.getElementById('panelBackdrop');
+   429→   429→  if (bd) {
+   430→   430→    bd.addEventListener('click', () => {
+   431→   431→      ['searchSection','advancedFilters'].forEach(id => {
+   432→   432→        const panel = document.getElementById(id);
+   433→   433→        const btn = document.getElementById(getToggleForPanelId(id));
+   434→   434→        if (panel) panel.classList.add('hidden');
+   435→   435→        if (panel) panel.setAttribute('aria-hidden', 'true');
+   436→   436→        if (btn) { btn.setAttribute('aria-expanded', 'false'); btn.classList.remove('active'); }
+   437→   437→      });
+   438→   438→      bd.classList.add('hidden');
+   439→   439→    });
+   440→   440→  }
+   441→   441→}
+   442→   442→
+   443→   443→/**
+   444→   444→ * Helper to toggle panels and set aria states
+   445→   445→ */
+   446→   446→function togglePanel(panel, btn) {
+   447→   447→  if (!panel || !btn) return;
+   448→   448→  const expanded = btn.getAttribute('aria-expanded') === 'true';
+   449→   449→  if (expanded) {
+   450→   450→    panel.classList.add('hidden');
+   451→   451→    panel.setAttribute('aria-hidden', 'true');
+   452→   452→    btn.setAttribute('aria-expanded', 'false');
+   453→   453→    btn.classList.remove('active');
+   454→   454→  } else {
+   455→   455→    panel.classList.remove('hidden');
+   456→   456→    panel.setAttribute('aria-hidden', 'false');
+   457→   457→    btn.setAttribute('aria-expanded', 'true');
+   458→   458→    btn.classList.add('active');
+   459→   459→    // Show backdrop
+   460→   460→    const bd = document.getElementById('panelBackdrop');
+   461→   461→    if (bd) bd.classList.remove('hidden');
+   462→   462→  }
+   463→   463→}
+   464→   464→
+   465→   465→/**
+   466→   466→ * Map panel id to toggle button id. Returns null if there is no dedicated toggle button.
+   467→   467→ */
+   468→   468→function getToggleForPanelId(id) {
+   469→   469→  if (!id) return null;
+   470→   470→  if (id === 'searchSection') return 'searchToggle';
+   471→   471→  if (id === 'advancedFilters') return 'filtersToggle';
+   472→   472→  // viewModeContainer is inline so it has no dedicated header toggle now
+   473→   473→  return null;
+   474→   474→}
+   475→   475→
+   476→   476→function toggleSearchPanel(evt) {
+   477→   477→  evt.stopPropagation();
+   478→   478→  console.log('toggleSearchPanel called');
+   479→   479→  const panel = document.getElementById('searchSection');
+   480→   480→  const btn = document.getElementById('searchToggle');
+   481→   481→  togglePanel(panel, btn);
+   482→   482→  // Focus search input when shown
+   483→   483→  if (btn.getAttribute('aria-expanded') === 'true') {
+   484→   484→    const input = document.getElementById('searchBar');
+   485→   485→    if (input) input.focus();
+   486→   486→  }
+   487→   487→}
+   488→   488→
+   489→   489→function toggleFiltersPanel(evt) {
+   490→   490→  evt.stopPropagation();
+   491→   491→  console.log('toggleFiltersPanel called');
+   492→   492→  const panel = document.getElementById('advancedFilters');
+   493→   493→  const btn = document.getElementById('filtersToggle');
+   494→   494→  togglePanel(panel, btn);
+   495→   495→}
+   496→   496→
+   497→   497→// toggleViewPanel removed — view mode control is inline via `viewToggle` and view-mode buttons.
+   498→   498→
+   499→   499→function closePanelsOnOutsideClick(e) {
+   500→   500→  // If click is not within panel or corresponding toggle buttons, hide all panels
+   501→   501→  const panels = ['searchSection', 'advancedFilters'];
+   502→   502→  panels.forEach(id => {
+   503→   503→    const panel = document.getElementById(id);
+   504→   504→    const toggleBtn = document.getElementById(getToggleForPanelId(id));
+   505→   505→    if (!panel || !toggleBtn) return;
+   506→   506→    if (!panel.classList.contains('hidden')) {
+   507→   507→      const inPanel = panel.contains(e.target) || toggleBtn.contains(e.target);
+   508→   508→      if (!inPanel) {
+   509→   509→        panel.classList.add('hidden');
+   510→   510→        panel.setAttribute('aria-hidden', 'true');
+   511→   511→        toggleBtn.setAttribute('aria-expanded', 'false');
+   512→   512→        toggleBtn.classList.remove('active');
+   513→   513→      }
+   514→   514→    }
+   515→   515→    // If all panels hidden, hide backdrop
+   516→   516→    const bd = document.getElementById('panelBackdrop');
+   517→   517→    if (bd) {
+   518→   518→      const sEl = document.getElementById('searchSection');
+   519→   519→      const aEl = document.getElementById('advancedFilters');
+   520→   520→      // viewModeContainer is inline, not overlay — only consider overlay panels
+   521→   521→      const any = (sEl && !sEl.classList.contains('hidden')) || (aEl && !aEl.classList.contains('hidden'));
+   522→   522→      if (!any) bd.classList.add('hidden');
+   523→   523→    }
+   524→   524→  });
+   525→   525→}
+   526→   526→
+   527→   527→/**
+   528→   528→ * Attach admin panel functionality listeners
+   529→   529→ */
+   530→   530→function attachAdminPanelListeners() {
+   531→   531→  document.getElementById('adminToggle').addEventListener('click', openAdminPanel);
+   532→   532→  document.getElementById('closeAdmin').addEventListener('click', closeAdminPanel);
+   533→   533→  
+   534→   534→  // Admin tabs
+   535→   535→  document.querySelectorAll('.admin-tabs .tab-btn').forEach(btn => {
+   536→   536→    btn.addEventListener('click', (e) => {
+   537→   537→      switchTab(e.target.dataset.tab);
+   538→   538→    });
+   539→   539→  });
+   540→   540→}
+   541→   541→
+   542→   542→/**
+   543→   543→ * Attach form-related listeners
+   544→   544→ */
+   545→   545→function attachFormListeners() {
+   546→   546→  // Add actress form
+   547→   547→  const addActressForm = document.getElementById('addActressForm');
+   548→   548→  if (addActressForm) {
+   549→   549→    // Disable native HTML validation so our JS handles validation (prevents silent blocking)
+   550→   550→    addActressForm.noValidate = true;
+   551→   551→    addActressForm.addEventListener('submit', handleAddActress);
+   552→   552→  }
+   553→   553→  
+   554→   554→  const addWebsiteBtn = document.getElementById('addWebsite');
+   555→   555→  if (addWebsiteBtn) addWebsiteBtn.addEventListener('click', addWebsiteField);
+   556→   556→
+   557→   557→  const clearFormBtn = document.getElementById('clearForm');
+   558→   558→  if (clearFormBtn) clearFormBtn.addEventListener('click', clearForm);
+   559→   559→
+   560→   560→  const saveTemplateBtn = document.getElementById('saveTemplate');
+   561→   561→  if (saveTemplateBtn) saveTemplateBtn.addEventListener('click', saveTemplate);
+   562→   562→  
+   563→   563→  // Image source tabs
+   564→   564→  document.querySelectorAll('.source-tab').forEach(tab => {
+   565→   565→    if (tab) tab.addEventListener('click', (e) => {
+   566→   566→      switchImageSource(e.target.dataset.source);
+   567→   567→    });
+   568→   568→  });
+   569→   569→
+   570→   570→  // Reset form when switching away from add tab
+   571→   571→  document.querySelectorAll('.admin-tabs .tab-btn').forEach(btn => {
+   572→   572→    btn.addEventListener('click', (e) => {
+   573→   573→      if (e.target.dataset.tab !== 'add' && editingSlug) {
+   574→   574→        resetForm();
+   575→   575→        showToast('Edit cancelled', 'info');
+   576→   576→      }
+   577→   577→    });
+   578→   578→  });
+   579→   579→
+   580→   580→  // Reset form when closing admin panel
+   581→   581→  document.getElementById('closeAdmin').addEventListener('click', () => {
+   582→   582→    if (editingSlug) {
+   583→   583→      resetForm();
+   584→   584→    }
+   585→   585→  });
+   586→   586→
+   587→   587→  // Image URL preview
+   588→   588→  const previewThumbBtn = document.getElementById('previewThumb');
+   589→   589→  if (previewThumbBtn) previewThumbBtn.addEventListener('click', previewThumbFromUrl);
+   590→   590→
+   591→   591→  const thumbUrlInput = document.getElementById('thumbUrl');
+   592→   592→  if (thumbUrlInput) thumbUrlInput.addEventListener('blur', previewThumbFromUrl);
+   593→   593→  
+   594→   594→  // Tags functionality
+   595→   595→  const tagsInput = document.getElementById('actressTags');
+   596→   596→  if (tagsInput) tagsInput.addEventListener('keydown', handleTagInput);
+   597→   597→
+   598→   598→  const clearSearchBtn = document.getElementById('clearSearchBtn');
+   599→   599→  if (clearSearchBtn) clearSearchBtn.addEventListener('click', (e) => {
+   600→   600→    e.preventDefault();
+   601→   601→    if (document.getElementById('searchBar')) {
+   602→   602→      document.getElementById('searchBar').value = '';
+   603→   603→      clearSearch();
+   604→   604→    }
+   605→   605→  });
+   606→   606→}
+   607→   607→
+   608→   608→/**
+   609→   609→ * Attach manage functionality listeners
+   610→   610→ */
+   611→   611→function attachManageListeners() {
+   612→   612→  const manageSearch = document.getElementById('manageSearch');
+   613→   613→  if (manageSearch) manageSearch.addEventListener('input', handleManageSearch);
+   614→   614→
+   615→   615→  const refreshListBtn = document.getElementById('refreshList');
+   616→   616→  if (refreshListBtn) refreshListBtn.addEventListener('click', loadManageList);
+   617→   617→
+   618→   618→  const applyBatchBtn = document.getElementById('applyBatch');
+   619→   619→  if (applyBatchBtn) applyBatchBtn.addEventListener('click', applyBatchAction);
+   620→   620→}
+   621→   621→
+   622→   622→/**
+   623→   623→ * Attach import/export functionality listeners
+   624→   624→ */
+   625→   625→function attachImportExportListeners() {
+   626→   626→  const exportJSONBtn = document.getElementById('exportJSON');
+   627→   627→  if (exportJSONBtn) exportJSONBtn.addEventListener('click', exportData);
+   628→   628→
+   629→   629→  const exportCSVBtn = document.getElementById('exportCSV');
+   630→   630→  if (exportCSVBtn) exportCSVBtn.addEventListener('click', exportCSV);
+   631→   631→
+   632→   632→  const exportPDFBtn = document.getElementById('exportPDF');
+   633→   633→  if (exportPDFBtn) exportPDFBtn.addEventListener('click', exportPDF);
+   634→   634→
+   635→   635→  const importDataBtn = document.getElementById('importData');
+   636→   636→  if (importDataBtn) importDataBtn.addEventListener('click', importData);
+   637→   637→
+   638→   638→  const importSource = document.getElementById('importSource');
+   639→   639→  if (importSource) importSource.addEventListener('change', handleImportSourceChange);
+   640→   640→
+   641→   641→  const clearAllDataBtn = document.getElementById('clearAllData');
+   642→   642→  if (clearAllDataBtn) clearAllDataBtn.addEventListener('click', clearAllData);
+   643→   643→}
+   644→   644→
+   645→   645→/**
+   646→   646→ * Attach settings listeners
+   647→   647→ */
+   648→   648→function attachSettingsListeners() {
+   649→   649→  const themeSetting = document.getElementById('themeSetting');
+   650→   650→  if (themeSetting) themeSetting.addEventListener('change', updateThemeSetting);
+   651→   651→
+   652→   652→  const cardSizeSelect = document.getElementById('cardSize');
+   653→   653→  if (cardSizeSelect) cardSizeSelect.addEventListener('change', updateCardSize);
+   654→   654→}
+   655→   655→
+   656→   656→// =============================================
+   657→   657→// NOTIFICATION SYSTEM
+   658→   658→// =============================================
+   659→   659→
+   660→   660→/**
+   661→   661→ * Enhanced Toast notification system
+   662→   662→ */
+   663→   663→function showToast(message, type = 'info', duration = 5000) {
+   664→   664→  const toastContainer = document.getElementById('toastContainer');
+   665→   665→  if (!toastContainer) return;
+   666→   666→
+   667→   667→  // Check if notifications are enabled
+   668→   668→  const notificationsEnabled = localStorage.getItem('toastNotifications') !== 'false';
+   669→   669→  if (!notificationsEnabled) return;
+   670→   670→
+   671→   671→  const toast = document.createElement('div');
+   672→   672→  toast.className = `toast ${type}`;
+   673→   673→  
+   674→   674→  const icon = type === 'success' ? 'fa-check-circle' : 
+   675→   675→               type === 'error' ? 'fa-exclamation-circle' :
+   676→   676→               type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+   677→   677→  
+   678→   678→  toast.innerHTML = `
+   679→   679→    <i class="fas ${icon}"></i>
+   680→   680→    <span>${message}</span>
+   681→   681→    <button class="toast-close" onclick="this.parentElement.remove()">
+   682→   682→      <i class="fas fa-times"></i>
+   683→   683→    </button>
+   684→   684→  `;
+   685→   685→
+   686→   686→  toastContainer.appendChild(toast);
+   687→   687→
+   688→   688→  // Auto remove after duration
+   689→   689→  setTimeout(() => {
+   690→   690→    if (toast.parentNode) {
+   691→   691→      toast.style.animation = 'slideIn 0.3s ease reverse';
+   692→   692→      setTimeout(() => {
+   693→   693→        if (toast.parentNode) {
+   694→   694→          toast.parentNode.removeChild(toast);
+   695→   695→        }
+   696→   696→      }, 300);
+   697→   697→    }
+   698→   698→  }, duration);
+   699→   699→}
+   700→   700→
+   701→   701→// =============================================
+   702→   702→// VIEW MODE MANAGEMENT
+   703→   703→// =============================================
+   704→   704→
+   705→   705→/**
+   706→   706→ * Update the handleViewModeChange function to sync with header icon
+   707→   707→ */
+   708→   708→function handleViewModeChange() {
+   709→   709→  // Remove active class from all buttons
+   710→   710→  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+   711→   711→    btn.classList.remove('active');
+   712→   712→  });
+   713→   713→  
+   714→   714→  // Add active class to clicked button
+   715→   715→  this.classList.add('active');
+   716→   716→  
+   717→   717→  // Get the view mode
+   718→   718→  currentViewMode = this.dataset.view;
+   719→   719→  
+   720→   720→  // Save to localStorage
+   721→   721→  localStorage.setItem('viewMode', currentViewMode);
+   722→   722→  
+   723→   723→  // Update header icon
+   724→   724→  updateViewToggleIcon();
+   725→   725→  
+   726→   726→  // Update the gallery view
+   727→   727→  updateGalleryView();
+   728→   728→  
+   729→   729→  showToast(`Switched to ${currentViewMode} view`, 'info', 2000);
+   730→   730→}
+   731→   731→
+   732→   732→
+   733→   733→/**
+   734→   734→ * Update gallery view based on current mode
+   735→   735→ */
+   736→   736→function updateGalleryView() {
+   737→   737→  // Remove all view classes
+   738→   738→  galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow');
+   739→   739→  
+   740→   740→  // Add current view class
+   741→   741→  galleryView.classList.add(`view-${currentViewMode}`);
+   742→   742→  
+   743→   743→  // Refresh the display
+   744→   744→  displayActresses(filterActresses(searchBar ? searchBar.value : '', currentCategory));
+   745→   745→}
+   746→   746→
+   747→   747→// =============================================
+   748→   748→// VIEW TOGGLE FUNCTIONALITY - ADD THESE FUNCTIONS
+   749→   749→// =============================================
+   750→   750→
+   751→   751→/**
+   752→   752→ * Initialize view toggle functionality
+   753→   753→ */
+   754→   754→function initializeViewToggle() {
+   755→   755→  const viewToggle = document.getElementById('viewToggle');
+   756→   756→  if (viewToggle) {
+   757→   757→    viewToggle.addEventListener('click', toggleViewMode);
+   758→   758→    updateViewToggleIcon(); // Set initial icon
+   759→   759→  }
+   760→   760→}
+   761→   761→
+   762→   762→/**
+   763→   763→ * Load view mode from localStorage and update UI
+   764→   764→ */
+   765→   765→function loadViewMode() {
+   766→   766→  const saved = localStorage.getItem('viewMode');
+   767→   767→  const validModes = ['grid', 'masonry', 'list', 'slideshow'];
+   768→   768→  if (saved && validModes.includes(saved)) {
+   769→   769→    currentViewMode = saved;
+   770→   770→  }
+   771→   771→  updateViewToggleIcon();
+   772→   772→  updateViewModeButtons();
+   773→   773→  if (galleryView) {
+   774→   774→    galleryView.classList.remove('view-grid', 'view-masonry', 'view-list', 'view-slideshow');
+   775→   775→    galleryView.classList.add(`view-${currentViewMode}`);
+   776→   776→  }
+   777→   777→}
+   778→   778→
+   779→   779→/**
+   780→   780→ * Toggle view mode via header icon - cycles through all view modes
+   781→   781→ */
+   782→   782→function toggleViewMode() {
+   783→   783→  // Cycle through view modes: grid -> masonry -> list -> slideshow -> grid
+   784→   784→  const viewModes = ['grid', 'masonry', 'list', 'slideshow'];
+   785→   785→  const currentIndex = viewModes.indexOf(currentViewMode);
+   786→   786→  const nextIndex = (currentIndex + 1) % viewModes.length;
+   787→   787→  const nextViewMode = viewModes[nextIndex];
+   788→   788→  
+   789→   789→  // Update view mode
+   790→   790→  currentViewMode = nextViewMode;
+   791→   791→  localStorage.setItem('viewMode', currentViewMode);
+   792→   792→  
+   793→   793→  // Update the view toggle icon
+   794→   794→  updateViewToggleIcon();
+   795→   795→  
+   796→   796→  // Update the active button in view mode container (if it exists)
+   797→   797→  updateViewModeButtons();
+   798→   798→  
+   799→   799→  // Update the gallery view
+   800→   800→  updateGalleryView();
+   801→   801→  
+   802→   802→  showToast(`Switched to ${currentViewMode} view`, 'info', 2000);
+   803→   803→}
+   804→   804→
+   805→   805→/**
+   806→   806→ * Update view toggle icon based on current view mode
+   807→   807→ */
+   808→   808→function updateViewToggleIcon() {
+   809→   809→  const viewToggle = document.getElementById('viewToggle');
+   810→   810→  if (!viewToggle) return;
+   811→   811→  
+   812→   812→  const icons = {
+   813→   813→    'grid': 'fa-th',
+   814→   814→    'masonry': 'fa-th-large', 
+   815→   815→    'list': 'fa-list',
+   816→   816→    'slideshow': 'fa-play'
+   817→   817→  };
+   818→   818→  
+   819→   819→  const iconClass = icons[currentViewMode] || 'fa-th';
+   820→   820→  viewToggle.innerHTML = `<i class="fas ${iconClass}"></i>`;
+   821→   821→  
+   822→   822→  // Update tooltip
+   823→   823→  viewToggle.title = `${currentViewMode.charAt(0).toUpperCase() + currentViewMode.slice(1)} View`;
+   824→   824→}
+   825→   825→
+   826→   826→/**
+   827→   827→ * Update view mode buttons to reflect current state
+   828→   828→ */
+   829→   829→function updateViewModeButtons() {
+   830→   830→  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+   831→   831→    btn.classList.remove('active');
+   832→   832→    if (btn.dataset.view === currentViewMode) {
+   833→   833→      btn.classList.add('active');
+   834→   834→    }
+   835→   835→  });
+   836→   836→}
+   837→   837→
+   838→   838→
+   839→   839→// =============================================
+   840→   840→// MODAL MANAGEMENT
+   841→   841→// =============================================
+   842→   842→
+   843→   843→/**
+   844→   844→ * Open quick add modal
+   845→   845→ */
+   846→   846→function openQuickAddModal() {
+   847→   847→  const quickAddModalEl = document.getElementById('quickAddModal');
+   848→   848→  if (quickAddModalEl) quickAddModalEl.classList.add('active');
+   849→   849→}
+   850→   850→
+   851→   851→/**
+   852→   852→ * Switch between quick add tabs
+   853→   853→ */
+   854→   854→function switchQuickAddTab(tabName) {
+   855→   855→  document.querySelectorAll('.quick-add-tabs .tab-btn').forEach(btn => {
+   856→   856→    btn.classList.remove('active');
+   857→   857→  });
+   858→   858→  const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+   859→   859→  if (tabBtn) tabBtn.classList.add('active');
+   860→   860→
+   861→   861→  document.querySelectorAll('#quickAddModal .tab-content').forEach(content => {
+   862→   862→    content.classList.remove('active');
+   863→   863→  });
+   864→   864→  document.getElementById(`quickAdd${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+   865→   865→}
+   866→   866→
+   867→   867→/**
+   868→   868→ * Close all modals
+   869→   869→ */
+   870→   870→function closeModals() {
+   871→   871→  document.querySelectorAll('.modal').forEach(modal => {
+   872→   872→    modal.classList.remove('active');
+   873→   873→  });
+   874→   874→}
+   875→   875→
+   876→   876→// =============================================
+   877→   877→// IMAGE VIEWER FUNCTIONALITY
+   878→   878→// =============================================
+   879→   879→
+   880→   880→let currentImageIndex = 0;
+   881→   881→let currentActressImages = [];
+   882→   882→
+   883→   883→/**
+   884→   884→ * Open image viewer
+   885→   885→ */
+   886→   886→function openImageViewer(actress, imageIndex = 0) {
+   887→   887→  currentActressImages = actress.gallery;
+   888→   888→  currentImageIndex = imageIndex;
+   889→   889→  
+   890→   890→  const modal = document.getElementById('imageViewer');
+   891→   891→  const img = document.getElementById('viewerImage');
+   892→   892→  const name = document.getElementById('imageActressName');
+   893→   893→  const index = document.getElementById('imageIndex');
+   894→   894→  
+   895→   895→  if (currentActressImages.length > 0) {
+   896→   896→    img.src = currentActressImages[imageIndex];
+   897→   897→    name.textContent = actress.name;
+   898→   898→    index.textContent = `${imageIndex + 1} / ${currentActressImages.length}`;
+   899→   899→    
+   900→   900→    modal.classList.add('active');
+   901→   901→    
+   902→   902→    // Track view
+   903→   903→    trackView(actress.slug);
+   904→   904→  }
+   905→   905→}
+   906→   906→
+   907→   907→/**
+   908→   908→ * Show previous image in viewer
+   909→   909→ */
+   910→   910→function showPreviousImage() {
+   911→   911→  if (currentActressImages.length === 0) return;
+   912→   912→  
+   913→   913→  currentImageIndex = (currentImageIndex - 1 + currentActressImages.length) % currentActressImages.length;
+   914→   914→  updateImageViewer();
+   915→   915→}
+   916→   916→
+   917→   917→/**
+   918→   918→ * Show next image in viewer
+   919→   919→ */
+   920→   920→function showNextImage() {
+   921→   921→  if (currentActressImages.length === 0) return;
+   922→   922→  
+   923→   923→  currentImageIndex = (currentImageIndex + 1) % currentActressImages.length;
+   924→   924→  updateImageViewer();
+   925→   925→}
+   926→   926→
+   927→   927→/**
+   928→   928→ * Update image viewer display
+   929→   929→ */
+   930→   930→function updateImageViewer() {
+   931→   931→  const img = document.getElementById('viewerImage');
+   932→   932→  const index = document.getElementById('imageIndex');
+   933→   933→  
+   934→   934→  img.src = currentActressImages[currentImageIndex];
+   935→   935→  index.textContent = `${currentImageIndex + 1} / ${currentActressImages.length}`;
+   936→   936→}
+   937→   937→
+   938→   938→// =============================================
+   939→   939→// CONTEXT MENU FUNCTIONALITY
+   940→   940→// =============================================
+   941→   941→
+   942→   942→/**
+   943→   943→ * Handle context menu display
+   944→   944→ */
+   945→   945→function handleContextMenu(e) {
+   946→   946→  const card = e.target.closest('.card');
+   947→   947→  if (card) {
+   948→   948→    e.preventDefault();
+   949→   949→    
+   950→   950→    const contextMenu = document.getElementById('contextMenu');
+   951→   951→    contextMenu.style.left = e.pageX + 'px';
+   952→   952→    contextMenu.style.top = e.pageY + 'px';
+   953→   953→    contextMenu.classList.add('active');
+   954→   954→    
+   955→   955→    // Store the target actress slug
+   956→   956→    const actressName = card.querySelector('.name').textContent;
+   957→   957→    const actress = actresses.find(a => a.name === actressName);
+   958→   958→    if (actress) {
+   959→   959→      contextMenu.dataset.actressSlug = actress.slug;
+   960→   960→    }
+   961→   961→  }
+   962→   962→}
+   963→   963→
+   964→   964→/**
+   965→   965→ * Hide context menu
+   966→   966→ */
+   967→   967→function hideContextMenu() {
+   968→   968→  const contextMenuEl = document.getElementById('contextMenu');
+   969→   969→  if (contextMenuEl) contextMenuEl.classList.remove('active');
+   970→   970→}
+   971→   971→
+   972→   972→// Attach context menu actions
+   973→   973→document.addEventListener('DOMContentLoaded', () => {
+   974→   974→  document.querySelectorAll('.context-item').forEach(item => {
+   975→   975→    item.addEventListener('click', (e) => {
+   976→   976→      const action = e.target.dataset.action;
+   977→   977→      const slug = document.getElementById('contextMenu').dataset.actressSlug;
+   978→   978→      const actress = actresses.find(a => a.slug === slug);
+   979→   979→      
+   980→   980→      if (actress) {
+   981→   981→        switch (action) {
+   982→   982→          case 'view':
+   983→   983→            openGallery(actress);
+   984→   984→            break;
+   985→   985→          case 'edit':
+   986→   986→            editActress(actress.slug);
+   987→   987→            break;
+   988→   988→          case 'favorite':
+   989→   989→            toggleFavorite(actress.slug);
+   990→   990→            break;
+   991→   991→          case 'share':
+   992→   992→            shareActress(actress);
+   993→   993→            break;
+   994→   994→          case 'delete':
+   995→   995→            deleteActress(actress.slug);
+   996→   996→            break;
+   997→   997→        }
+   998→   998→      }
+   999→   999→      
+  1000→  1000→      hideContextMenu();
+  1001→  1001→    });
+  1002→  1002→  });
+  1003→  1003→});
+  1004→  1004→
+  1005→  1005→// =============================================
+  1006→  1006→// KEYBOARD SHORTCUTS
+  1007→  1007→// =============================================
+  1008→  1008→
+  1009→  1009→/**
+  1010→  1010→ * Handle keyboard shortcuts
+  1011→  1011→ */
+  1012→  1012→function handleKeyboardShortcuts(e) {
+  1013→  1013→  if (e.ctrlKey || e.metaKey) {
+  1014→  1014→    switch (e.key) {
+  1015→  1015→      case 'k':
+  1016→  1016→        e.preventDefault();
+  1017→  1017→        if (searchBar) {
+  1018→  1018→          // Ensure search panel is visible on Ctrl+K
+  1019→  1019→          const panel = document.getElementById('searchSection');
+  1020→  1020→          const btn = document.getElementById('searchToggle');
+  1021→  1021→          if (panel && panel.classList.contains('hidden')) {
+  1022→  1022→            togglePanel(panel, btn);
+  1023→  1023→          }
+  1024→  1024→          searchBar.focus();
+  1025→  1025→        }
+  1026→  1026→        break;
+  1027→  1027→      case 'n':
+  1028→  1028→        e.preventDefault();
+  1029→  1029→        if (adminView.style.display === 'none') {
+  1030→  1030→          openAdminPanel();
+  1031→  1031→        }
+  1032→  1032→        switchTab('add');
+  1033→  1033→        break;
+  1034→  1034→      case 'e':
+  1035→  1035→        e.preventDefault();
+  1036→  1036→        exportData();
+  1037→  1037→        break;
+  1038→  1038→    }
+  1039→  1039→  }
+  1040→  1040→  
+  1041→  1041→  if (e.key === 'Escape') {
+  1042→  1042→    if (adminView.style.display !== 'none') {
+  1043→  1043→      closeAdminPanel();
+  1044→  1044→    }
+  1045→  1045→    closeModals();
+  1046→  1046→    hideContextMenu();
+  1047→  1047→    // Hide toggle panels if they are visible
+  1048→  1048→    ['searchSection','advancedFilters'].forEach(id => {
+  1049→  1049→      const panel = document.getElementById(id);
+  1050→  1050→      const btn = document.getElementById(getToggleForPanelId(id));
+  1051→  1051→      if (panel && !panel.classList.contains('hidden')) {
+  1052→  1052→        panel.classList.add('hidden');
+  1053→  1053→        panel.setAttribute('aria-hidden', 'true');
+  1054→  1054→        if (btn) btn.setAttribute('aria-expanded', 'false');
+  1055→  1055→        if (btn) btn.classList.remove('active');
+  1056→  1056→      }
+  1057→  1057→    });
+  1058→  1058→  }
+  1059→  1059→  
+  1060→  1060→  // Image viewer navigation
+  1061→  1061→  const imageViewerEl = document.getElementById('imageViewer');
+  1062→  1062→  if (imageViewerEl && imageViewerEl.classList.contains('active')) {
+  1063→  1063→    switch (e.key) {
+  1064→  1064→      case 'ArrowLeft':
+  1065→  1065→        showPreviousImage();
+  1066→  1066→        break;
+  1067→  1067→      case 'ArrowRight':
+  1068→  1068→        showNextImage();
+  1069→  1069→        break;
+  1070→  1070→    }
+  1071→  1071→  }
+  1072→  1072→}
+  1073→  1073→
+  1074→  1074→// =============================================
+  1075→  1075→// STATS & SEARCH FUNCTIONALITY
+  1076→  1076→// =============================================
+  1077→  1077→
+  1078→  1078→/**
+  1079→  1079→ * Update statistics display
+  1080→  1080→ */
+  1081→  1081→function updateStats() {
+  1082→  1082→  const totalActresses = document.getElementById('totalActresses');
+  1083→  1083→  const totalPhotos = document.getElementById('totalPhotos');
+  1084→  1084→  const totalLinks = document.getElementById('totalLinks');
+  1085→  1085→  const totalViews = document.getElementById('totalViews');
+  1086→  1086→  
+  1087→  1087→  if (totalActresses) {
+  1088→  1088→    totalActresses.textContent = actresses.length;
+  1089→  1089→  }
+  1090→  1090→  
+  1091→  1091→  if (totalPhotos) {
+  1092→  1092→    const photoCount = actresses.reduce((sum, actress) => sum + actress.gallery.length, 0);
+  1093→  1093→    totalPhotos.textContent = photoCount;
+  1094→  1094→  }
+  1095→  1095→  
+  1096→  1096→  if (totalLinks) {
+  1097→  1097→    const linkCount = actresses.reduce((sum, actress) => sum + actress.websites.length, 0);
+  1098→  1098→    totalLinks.textContent = linkCount;
+  1099→  1099→  }
+  1100→  1100→  
+  1101→  1101→  if (totalViews) {
+  1102→  1102→    const viewCount = actresses.reduce((sum, actress) => sum + (actress.views || 0), 0);
+  1103→  1103→    totalViews.textContent = viewCount;
+  1104→  1104→  }
+  1105→  1105→}
+  1106→  1106→
+  1107→  1107→/**
+  1108→  1108→ * Update search results count display
+  1109→  1109→ */
+  1110→  1110→function updateSearchResultsCount(filteredActresses = null) {
+  1111→  1111→  const searchResultsCount = document.getElementById('searchResultsCount');
+  1112→  1112→  const searchTime = document.getElementById('searchTime');
+  1113→  1113→  
+  1114→  1114→  if (!searchResultsCount) return;
+  1115→  1115→
+  1116→  1116→  if (filteredActresses === null) {
+  1117→  1117→    filteredActresses = filterActresses(searchBar ? searchBar.value : '', currentCategory);
+  1118→  1118→  }
+  1119→  1119→
+  1120→  1120→  const total = actresses.length;
+  1121→  1121→  const showing = filteredActresses.length;
+  1122→  1122→  
+  1123→  1123→  if (showing === total) {
+  1124→  1124→    searchResultsCount.textContent = `Showing all ${total} actresses`;
+  1125→  1125→  } else {
+  1126→  1126→    searchResultsCount.textContent = `Showing ${showing} of ${total} actresses`;
+  1127→  1127→  }
+  1128→  1128→  
+  1129→  1129→  // Show search time for non-trivial searches
+  1130→  1130→  if (searchBar && searchBar.value.trim() && searchTimeout) {
+  1131→  1131→    const searchDuration = Date.now() - searchTimeout;
+  1132→  1132→    searchTime.textContent = `in ${searchDuration}ms`;
+  1133→  1133→  } else {
+  1134→  1134→    searchTime.textContent = '';
+  1135→  1135→  }
+  1136→  1136→}
+  1137→  1137→
+  1138→  1138→// =============================================
+  1139→  1139→// FILTERING & SORTING
+  1140→  1140→// =============================================
+  1141→  1141→
+  1142→  1142→/**
+  1143→  1143→ * Handle category filter change
+  1144→  1144→ */
+  1145→  1145→function handleCategoryChange() {
+  1146→  1146→  categoryButtons.forEach(btn => btn.classList.remove('active'));
+  1147→  1147→  this.classList.add('active');
+  1148→  1148→  currentCategory = this.dataset.category;
+  1149→  1149→  const filtered = filterActresses(searchBar ? searchBar.value : '', currentCategory);
+  1150→  1150→  displayActresses(filtered);
+  1151→  1151→  updateSearchResultsCount(filtered);
+  1152→  1152→}
+  1153→  1153→
+  1154→  1154→/**
+  1155→  1155→ * Handle sort option change
+  1156→  1156→ */
+  1157→  1157→function handleSortChange() {
+  1158→  1158→  const sortBy = document.getElementById('sortBy').value;
+  1159→  1159→  displayActresses(filterActresses(searchBar ? searchBar.value : '', currentCategory));
+  1160→  1160→}
+  1161→  1161→
+  1162→  1162→/**
+  1163→  1163→ * Clear all filters
+  1164→  1164→ */
+  1165→  1165→function clearAllFilters() {
+  1166→  1166→  if (searchBar) searchBar.value = '';
+  1167→  1167→  document.getElementById('sortBy').value = 'name';
+  1168→  1168→  categoryButtons.forEach(btn => btn.classList.remove('active'));
+  1169→  1169→  document.querySelector('[data-category="all"]').classList.add('active');
+  1170→  1170→  currentCategory = 'all';
+  1171→  1171→  
+  1172→  1172→  displayActresses(filterActresses('', 'all'));
+  1173→  1173→  updateSearchResultsCount();
+  1174→  1174→  showToast('All filters cleared', 'info', 2000);
+  1175→  1175→}
+  1176→  1176→
+  1177→  1177→/**
+  1178→  1178→ * Enhanced Search with debouncing
+  1179→  1179→ */
+  1180→  1180→function handleSearch(e) {
+  1181→  1181→  const query = e.target.value;
+  1182→  1182→  
+  1183→  1183→  // Clear previous timeout
+  1184→  1184→  if (searchTimeout) {
+  1185→  1185→    clearTimeout(searchTimeout);
+  1186→  1186→  }
+  1187→  1187→  
+  1188→  1188→  // Set new timeout for debouncing
+  1189→  1189→  searchTimeout = setTimeout(() => {
+  1190→  1190→    const filtered = filterActresses(query, currentCategory);
+  1191→  1191→    displayActresses(filtered);
+  1192→  1192→    updateSearchResultsCount(filtered);
+  1193→  1193→    searchTimeout = null;
+  1194→  1194→  }, 300);
+  1195→  1195→}
+  1196→  1196→
+  1197→  1197→/**
+  1198→  1198→ * Filter actresses based on query and category
+  1199→  1199→ */
+  1200→  1200→function filterActresses(query, category) {
+  1201→  1201→  let filtered = actresses;
+  1202→  1202→  
+  1203→  1203→  if (category !== 'all') {
+  1204→  1204→    filtered = filtered.filter(a => a.category === category);
+  1205→  1205→  }
+  1206→  1206→  
+  1207→  1207→  const q = String(query || '').trim().toLowerCase();
+  1208→  1208→  if (q) {
+  1209→  1209→    filtered = filtered.filter(a => 
+  1210→  1210→      a.name.toLowerCase().includes(q) ||
+  1211→  1211→      a.category.toLowerCase().includes(q) ||
+  1212→  1212→      (a.tags && a.tags.some(tag => tag.toLowerCase().includes(q)))
+  1213→  1213→    );
+  1214→  1214→  }
+  1215→  1215→  
+  1216→  1216→  return filtered;
+  1217→  1217→}
+  1218→  1218→
+  1219→  1219→/**
+  1220→  1220→ * Sort actresses based on criteria
+  1221→  1221→ */
+  1222→  1222→function sortActresses(list, sortBy) {
+  1223→  1223→  return [...list].sort((a, b) => {
+  1224→  1224→    switch (sortBy) {
+  1225→  1225→      case 'name-desc':
+  1226→  1226→        return b.name.localeCompare(a.name);
+  1227→  1227→      case 'recent':
+  1228→  1228→        return new Date(b.createdAt) - new Date(a.createdAt);
+  1229→  1229→      case 'views':
+  1230→  1230→        return (b.views || 0) - (a.views || 0);
+  1231→  1231→      case 'photos':
+  1232→  1232→        return b.gallery.length - a.gallery.length;
+  1233→  1233→      case 'links':
+  1234→  1234→        return b.websites.length - a.websites.length;
+  1235→  1235→      default: // 'name'
+  1236→  1236→        return a.name.localeCompare(b.name);
+  1237→  1237→    }
+  1238→  1238→  });
+  1239→  1239→}
+  1240→  1240→
+  1241→  1241→// =============================================
+  1242→  1242→// BATCH ACTIONS
+  1243→  1243→// =============================================
+  1244→  1244→
+  1245→  1245→/**
+  1246→  1246→ * Open batch actions
+  1247→  1247→ */
+  1248→  1248→function openBatchActions() {
+  1249→  1249→  selectedActresses.clear();
+  1250→  1250→  loadManageList();
+  1251→  1251→  switchTab('manage');
+  1252→  1252→  showToast('Select actresses for batch actions', 'info');
+  1253→  1253→}
+  1254→  1254→
+  1255→  1255→/**
+  1256→  1256→ * Apply batch action to selected actresses
+  1257→  1257→ */
+  1258→  1258→function applyBatchAction() {
+  1259→  1259→  const action = document.getElementById('batchAction').value;
+  1260→  1260→  if (!action) {
+  1261→  1261→    showToast('Please select a batch action', 'error');
+  1262→  1262→    return;
+  1263→  1263→  }
+  1264→  1264→  
+  1265→  1265→  if (selectedActresses.size === 0) {
+  1266→  1266→    showToast('No actresses selected', 'error');
+  1267→  1267→    return;
+  1268→  1268→  }
+  1269→  1269→  
+  1270→  1270→  switch (action) {
+  1271→  1271→    case 'delete':
+  1272→  1272→      if (confirm(`Delete ${selectedActresses.size} selected actresses?`)) {
+  1273→  1273→        selectedActresses.forEach(slug => {
+  1274→  1274→          actresses = actresses.filter(a => a.slug !== slug);
+  1275→  1275→        });
+  1276→  1276→        saveActresses();
+  1277→  1277→        loadManageList();
+  1278→  1278→        displayActresses(filterActresses(searchBar ? searchBar.value : '', currentCategory));
+  1279→  1279→        updateStats();
+  1280→  1280→        showToast(`Deleted ${selectedActresses.size} actresses`, 'success');
+  1281→  1281→        selectedActresses.clear();
+  1282→  1282→      }
+  1283→  1283→      break;
+  1284→  1284→    case 'category':
+  1285→  1285→      const newCategory = prompt('Enter new category:');
+  1286→  1286→      if (newCategory) {
+  1287→  1287→        selectedActresses.forEach(slug => {
+  1288→  1288→          const actress = actresses.find(a => a.slug === slug);
+  1289→  1289→          if (actress) actress.category = newCategory;
+  1290→  1290→        });
+  1291→  1291→        saveActresses();
+  1292→  1292→        loadManageList();
+  1293→  1293→        showToast(`Updated category for ${selectedActresses.size} actresses`, 'success');
+  1294→  1294→        selectedActresses.clear();
+  1295→  1295→      }
+  1296→  1296→      break;
+  1297→  1297→  }
+  1298→  1298→}
+  1299→  1299→
+  1300→  1300→// =============================================
+  1301→  1301→// VIEW TRACKING
+  1302→  1302→// =============================================
+  1303→  1303→
+  1304→  1304→/**
+  1305→  1305→ * Track view count for actress
+  1306→  1306→ */
+  1307→  1307→function trackView(slug) {
+  1308→  1308→  const actress = actresses.find(a => a.slug === slug);
+  1309→  1309→  if (actress) {
+  1310→  1310→    actress.views = (actress.views || 0) + 1;
+  1311→  1311→    actress.lastViewed = new Date().toISOString();
+  1312→  1312→    saveActresses();
+  1313→  1313→    updateStats();
+  1314→  1314→  }
+  1315→  1315→}
+  1316→  1316→
+  1317→  1317→// =============================================
+  1318→  1318→// TAG MANAGEMENT
+  1319→  1319→// =============================================
+  1320→  1320→
+  1321→  1321→/**
+  1322→  1322→ * Handle tag input
+  1323→  1323→ */
+  1324→  1324→function handleTagInput(e) {
+  1325→  1325→  if (e.key === 'Enter' || e.key === ',') {
+  1326→  1326→    e.preventDefault();
+  1327→  1327→    const tagInput = document.getElementById('actressTags');
+  1328→  1328→    const tag = tagInput.value.trim().replace(',', '');
+  1329→  1329→    
+  1330→  1330→    if (tag) {
+  1331→  1331→      addTag(tag);
+  1332→  1332→      tagInput.value = '';
+  1333→  1333→    }
+  1334→  1334→  }
+  1335→  1335→}
+  1336→  1336→
+  1337→  1337→/**
+  1338→  1338→ * Add tag to tags container
+  1339→  1339→ */
+  1340→  1340→function addTag(tag) {
+  1341→  1341→  const tagsContainer = document.getElementById('tagsContainer');
+  1342→  1342→  const tagElement = document.createElement('div');
+  1343→  1343→  tagElement.className = 'tag';
+  1344→  1344→  tagElement.innerHTML = `
+  1345→  1345→    ${tag}
+  1346→  1346→    <button class="tag-remove" onclick="this.parentElement.remove()">
+  1347→  1347→      <i class="fas fa-times"></i>
+  1348→  1348→    </button>
+  1349→  1349→  `;
+  1350→  1350→  tagsContainer.appendChild(tagElement);
+  1351→  1351→}
+  1352→  1352→
+  1353→  1353→/**
+  1354→  1354→ * Get all tags from tags container
+  1355→  1355→ */
+  1356→  1356→function getTags() {
+  1357→  1357→  const tags = [];
+  1358→  1358→  document.querySelectorAll('#tagsContainer .tag').forEach(tag => {
+  1359→  1359→    tags.push(tag.textContent.trim());
+  1360→  1360→  });
+  1361→  1361→  return tags;
+  1362→  1362→}
+  1363→  1363→
+  1364→  1364→// =============================================
+  1365→  1365→// IMAGE SOURCE MANAGEMENT
+  1366→  1366→// =============================================
+  1367→  1367→
+  1368→  1368→/**
+  1369→  1369→ * Switch between image source tabs
+  1370→  1370→ */
+  1371→  1371→function switchImageSource(source) {
+  1372→  1372→  document.querySelectorAll('.source-tab').forEach(tab => {
+  1373→  1373→    tab.classList.remove('active');
+  1374→  1374→  });
+  1375→  1375→  document.querySelector(`[data-source="${source}"]`).classList.add('active');
+  1376→  1376→
+  1377→  1377→  document.querySelectorAll('.source-content').forEach(content => {
+  1378→  1378→    content.classList.remove('active');
+  1379→  1379→  });
+  1380→  1380→  document.getElementById(`image${source.charAt(0).toUpperCase() + source.slice(1)}Source`).classList.add('active');
+  1381→  1381→}
+  1382→  1382→
+  1383→  1383→/**
+  1384→  1384→ * Preview thumbnail from URL
+  1385→  1385→ */
+  1386→  1386→function previewThumbFromUrl() {
+  1387→  1387→  const url = document.getElementById('thumbUrl').value;
+  1388→  1388→  const preview = document.getElementById('thumbPreview');
+  1389→  1389→  
+  1390→  1390→  if (url) {
+  1391→  1391→    preview.innerHTML = `<img src="${url}" class="preview-image" alt="Thumbnail preview" onerror="this.style.display='none'">`;
+  1392→  1392→  } else {
+  1393→  1393→    preview.innerHTML = '';
+  1394→  1394→  }
+  1395→  1395→}
+  1396→  1396→
+  1397→  1397→// =============================================
+  1398→  1398→// FORM HANDLING - FIXED VERSION
+  1399→  1399→// =============================================
+  1400→  1400→
+  1401→  1401→/**
+  1402→  1402→ * Handle add actress form submission - FIXED VERSION
+  1403→  1403→ */
+  1404→  1404→async function handleAddActress(event) {
+  1405→  1405→  event.preventDefault();
+  1406→  1406→  console.log('Form submission started... Editing slug:', editingSlug);
+  1407→  1407→  
+  1408→  1408→  const name = document.getElementById('actressName').value.trim();
+  1409→  1409→  const category = document.getElementById('actressCategory').value;
+  1410→  1410→  const thumbUrl = document.getElementById('thumbUrl').value;
+  1411→  1411→  
+  1412→  1412→  // Basic validation
+  1413→  1413→  if (!name) {
+  1414→  1414→    showToast('Please enter actress name', 'error');
+  1415→  1415→    return;
+  1416→  1416→  }
+  1417→  1417→  
+  1418→  1418→  if (!category) {
+  1419→  1419→    showToast('Please select a category', 'error');
+  1420→  1420→    return;
+  1421→  1421→  }
+  1422→  1422→  
+  1423→  1423→  try {
+  1424→  1424→    // Generate slug from name (for new entries)
+  1425→  1425→    const slug = editingSlug || name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  1426→  1426→    
+  1427→  1427→    // Check for duplicates (only when adding new, not editing)
+  1428→  1428→    if (!editingSlug) {
+  1429→  1429→      const existingActress = actresses.find(a => a.slug === slug);
+  1430→  1430→      if (existingActress) {
+  1431→  1431→        showToast(`Actress "${name}" already exists`, 'error');
+  1432→  1432→        return;
+  1433→  1433→      }
+  1434→  1434→    }
+  1435→  1435→    
+  1436→  1436→    // Create actress data object
+  1437→  1437→    const actressData = {
+  1438→  1438→      slug: slug,
+  1439→  1439→      name: name,
+  1440→  1440→      category: category,
+  1441→  1441→      tags: getTags(),
+  1442→  1442→      websites: safeGetWebsiteData(),
+  1443→  1443→      gallery: safeGetGalleryUrls(),
+  1444→  1444→      thumb: thumbUrl || 'https://via.placeholder.com/300x240/374151/9ca3af?text=No+Image',
+  1445→  1445→      views: editingSlug ? (actresses.find(a => a.slug === editingSlug)?.views || 0) : 0,
+  1446→  1446→      createdAt: editingSlug ? (actresses.find(a => a.slug === editingSlug)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+  1447→  1447→      lastViewed: editingSlug ? (actresses.find(a => a.slug === editingSlug)?.lastViewed || null) : null
+  1448→  1448→    };
+  1449→  1449→    
+  1450→  1450→    console.log('Prepared actress data for save:', actressData);
+  1451→  1451→    
+  1452→  1452→    if (editingSlug) {
+  1453→  1453→      // Update existing actress
+  1454→  1454→      const index = actresses.findIndex(a => a.slug === editingSlug);
+  1455→  1455→      if (index !== -1) {
+  1456→  1456→        console.log('Updating actress at index:', index);
+  1457→  1457→        actresses[index] = actressData;
+  1458→  1458→        showToast(`Actress "${name}" updated successfully!`, 'success');
+  1459→  1459→      } else {
+  1460→  1460→        showToast('Error: Actress not found for editing', 'error');
+  1461→  1461→        return;
+  1462→  1462→      }
+  1463→  1463→    } else {
+  1464→  1464→      // Add new actress
+  1465→  1465→      actresses.push(actressData);
+  1466→  1466→      showToast(`Actress "${name}" added successfully!`, 'success');
+  1467→  1467→    }
+  1468→  1468→    
+  1469→  1469→    // Save to storage
+  1470→  1470→    saveActresses();
+  1471→  1471→    
+  1472→  1472→    // Reset form and editing state
+  1473→  1473→    editingSlug = null;
+  1474→  1474→    resetForm();
+  1475→  1475→    
+  1476→  1476→    // Refresh UI
+  1477→  1477→    if (adminView.style.display !== 'none') {
+  1478→  1478→      switchTab('manage');
+  1479→  1479→      loadManageList();
+  1480→  1480→    }
+  1481→  1481→    
+  1482→  1482→    displayActresses(filterActresses(searchBar ? searchBar.value : '', currentCategory));
+  1483→  1483→    updateStats();
+  1484→  1484→    updateSearchResultsCount();
+  1485→  1485→    
+  1486→  1486→  } catch (error) {
+  1487→  1487→    console.error('Error saving actress:', error);
+  1488→  1488→    showToast('Error saving actress data: ' + error.message, 'error');
+  1489→  1489→  }
+  1490→  1490→}
+  1491→  1491→
+  1492→  1492→/**
+  1493→  1493→ * Get website data from form
+  1494→  1494→ */
+  1495→  1495→function getWebsiteData() {
+  1496→  1496→  const websites = [];
+  1497→  1497→  const websiteNames = document.querySelectorAll('input[name="websiteName[]"]');
+  1498→  1498→  const websiteUrls = document.querySelectorAll('input[name="websiteUrl[]"]');
+  1499→  1499→  const websitePictures = document.querySelectorAll('input[name="websitePicture[]"]');
+  1500→  1500→  const websiteTypes = document.querySelectorAll('select[name="websiteType[]"]');
+  1501→  1501→
+  1502→  1502→  for (let i = 0; i < websiteNames.length; i++) {
+  1503→  1503→    if (websiteNames[i].value && websiteUrls[i].value) {
+  1504→  1504→      websites.push({
+  1505→  1505→        name: websiteNames[i].value.trim(),
+  1506→  1506→        url: websiteUrls[i].value.trim(),
+  1507→  1507→        picture: websitePictures[i].value.trim(),
+  1508→  1508→        type: websiteTypes[i].value
+  1509→  1509→      });
+  1510→  1510→    }
+  1511→  1511→  }
+  1512→  1512→  return websites;
+  1513→  1513→}
+  1514→  1514→
+  1515→  1515→// Safe wrapper for retrieving website data to avoid uncaught errors during update
+  1516→  1516→function safeGetWebsiteData() {
+  1517→  1517→  try {
+  1518→  1518→    return getWebsiteData();
+  1519→  1519→  } catch (err) {
+  1520→  1520→    console.warn('safeGetWebsiteData caught error:', err);
+  1521→  1521→    return [];
+  1522→  1522→  }
+  1523→  1523→}
+  1524→  1524→
+  1525→  1525→/**
+  1526→  1526→ * Get gallery URLs from form
+  1527→  1527→ */
+  1528→  1528→function getGalleryUrls() {
+  1529→  1529→  const galleryUrls = document.getElementById('galleryUrls');
+  1530→  1530→  return galleryUrls && galleryUrls.value ? 
+  1531→  1531→    galleryUrls.value.split('\n').filter(url => url.trim()) : [];
+  1532→  1532→}
+  1533→  1533→
+  1534→  1534→// Safe wrapper for retrieving gallery URLs
+  1535→  1535→function safeGetGalleryUrls() {
+  1536→  1536→  try {
+  1537→  1537→    return getGalleryUrls();
+  1538→  1538→  } catch (err) {
+  1539→  1539→    console.warn('safeGetGalleryUrls caught error:', err);
+  1540→  1540→    return [];
+  1541→  1541→  }
+  1542→  1542→}
+  1543→  1543→
+  1544→  1544→/**
+  1545→  1545→ * Add website field to form
+  1546→  1546→ */
+  1547→  1547→function addWebsiteField() {
+  1548→  1548→  const websiteLinks = document.getElementById('websiteLinks');
+  1549→  1549→  const websiteId = Date.now();
+  1550→  1550→  
+  1551→  1551→  const websiteHtml = `
+  1552→  1552→  <div class="website-link" data-id="${websiteId}">
+  1553→  1553→    <div class="website-link-header">
+  1554→  1554→      <h4>Website Link</h4>
+  1555→  1555→      <div class="website-link-controls">
+  1556→  1556→        <button type="button" class="remove-website" onclick="removeWebsiteField(${websiteId})">
+  1557→  1557→          <i class="fas fa-times"></i>
+  1558→  1558→        </button>
+  1559→  1559→      </div>
+  1560→  1560→    </div>
+  1561→  1561→    <div class="form-row">
+  1562→  1562→      <div class="form-group" style="flex: 1;">
+  1563→  1563→        <label>Website Name</label>
+  1564→  1564→        <input type="text" name="websiteName[]" placeholder="e.g., Instagram" required>
+  1565→  1565→      </div>
+  1566→  1566→      <div class="form-group" style="flex: 1;">
+  1567→  1567→        <label>Website URL</label>
+  1568→  1568→        <input type="url" name="websiteUrl[]" placeholder="https://..." required>
+  1569→  1569→      </div>
+  1570→  1570→      <div class="form-group" style="flex: 1;">
+  1571→  1571→        <label>Picture URL (Optional)</label>
+  1572→  1572→        <input type="url" name="websitePicture[]" placeholder="https://image-url.jpg" onchange="updateWebsiteControlsOnPictureChange(this)">
+  1573→  1573→        <small>URL for link preview image${editingSlug ? ' (add to enable ordering)' : ''}</small>
+  1574→  1574→      </div>
+  1575→  1575→      <div class="form-group" style="flex: 1;">
+  1576→  1576→        <label>Type</label>
+  1577→  1577→        <select name="websiteType[]">
+  1578→  1578→          <option value="official">Official</option>
+  1579→  1579→          <option value="instagram">Instagram</option>
+  1580→  1580→          <option value="twitter">Twitter</option>
+  1581→  1581→          <option value="wikipedia">Wikipedia</option>
+  1582→  1582→          <option value="facebook">Facebook</option>
+  1583→  1583→          <option value="youtube">YouTube</option>
+  1584→  1584→          <option value="mega">MEGA</option>
+  1585→  1585→          <option value="reddit">Reddit</option>
+  1586→  1586→          <option value="default">Other</option>
+  1587→  1587→        </select>
+  1588→  1588→      </div>
+  1589→  1589→    </div>
+  1590→  1590→  </div>
+  1591→  1591→`;
+  1592→  1592→  
+  1593→  1593→  websiteLinks.insertAdjacentHTML('beforeend', websiteHtml);
+  1594→  1594→}
+  1595→  1595→
+  1596→  1596→
+  1597→  1597→/**
+  1598→  1598→ * Remove website field from form
+  1599→  1599→ */
+  1600→  1600→function removeWebsiteField(id) {
+  1601→  1601→  const element = document.querySelector(`[data-id="${id}"]`);
+  1602→  1602→  if (element) {
+  1603→  1603→    element.remove();
+  1604→  1604→  }
+  1605→  1605→}
+  1606→  1606→
+  1607→  1607→/**
+  1608→  1608→ * Move a website up or down in the websites array and update the form display
+  1609→  1609→ * @param {number} index - Current index of the website in the array
+  1610→  1610→ * @param {string} direction - 'up' or 'down'
+  1611→  1611→ */
+  1612→  1612→function moveWebsite(index, direction) {
+  1613→  1613→  // Get current editing actress from the actresses array
+  1614→  1614→  if (!editingSlug) {
+  1615→  1615→    showToast('Error: No actress is being edited', 'error');
+  1616→  1616→    return;
+  1617→  1617→  }
+  1618→  1618→  
+  1619→  1619→  const actress = actresses.find(a => a.slug === editingSlug);
+  1620→  1620→  if (!actress || !actress.websites) {
+  1621→  1621→    showToast('Error: Could not find websites to reorder', 'error');
+  1622→  1622→    return;
+  1623→  1623→  }
+  1624→  1624→  
+  1625→  1625→  // Make sure index is within bounds
+  1626→  1626→  if (!Number.isInteger(index) || index < 0 || index >= actress.websites.length) {
+  1627→  1627→    console.warn('Invalid index:', index, 'Total websites:', actress.websites.length);
+  1628→  1628→    showToast('Error: Invalid website index', 'error');
+  1629→  1629→    return;
+  1630→  1630→  }
+  1631→  1631→  
+  1632→  1632→  // Determine the swap target index
+  1633→  1633→  let targetIndex = -1;
+  1634→  1634→  if (direction === 'up' && index > 0) {
+  1635→  1635→    targetIndex = index - 1;
+  1636→  1636→  } else if (direction === 'down' && index < actress.websites.length - 1) {
+  1637→  1637→    targetIndex = index + 1;
+  1638→  1638→  } else {
+  1639→  1639→    showToast(`Cannot move ${direction} - already at ${direction === 'up' ? 'top' : 'bottom'}`, 'info');
+  1640→  1640→    return;
+  1641→  1641→  }
+  1642→  1642→  
+  1643→  1643→  // Swap the websites in the array
+  1644→  1644→  [actress.websites[index], actress.websites[targetIndex]] = 
+  1645→  1645→  [actress.websites[targetIndex], actress.websites[index]];
+  1646→  1646→  
+  1647→  1647→  // Re-populate the form to reflect the new order
+  1648→  1648→  populateFormForEditing(actress);
+  1649→  1649→  
+  1650→  1650→  console.log(`Website moved ${direction}: old index ${index}, new index ${targetIndex}`);
+  1651→  1651→}
+  1652→  1652→
+  1653→  1653→
+  1654→  1654→/**
+  1655→  1655→ * Update website controls (move buttons) when picture URL is added/removed
+  1656→  1656→ * @param {HTMLInputElement} inputElement - The picture URL input element
+  1657→  1657→ */
+  1658→  1658→function updateWebsiteControlsOnPictureChange(inputElement) {
+  1659→  1659→  const hasPictureValue = inputElement.value && inputElement.value.trim().length > 0;
+  1660→  1660→  const websiteElement = inputElement.closest('.website-link');
+  1661→  1661→  
+  1662→  1662→  if (!websiteElement) return;
+  1663→  1663→  
+  1664→  1664→  // Get or create the controls container
+  1665→  1665→  let controlsContainer = websiteElement.querySelector('.website-link-controls');
+  1666→  1666→  if (!controlsContainer) {
+  1667→  1667→    const header = websiteElement.querySelector('.website-link-header');
+  1668→  1668→    if (header) {
+  1669→  1669→      controlsContainer = document.createElement('div');
+  1670→  1670→      controlsContainer.className = 'website-link-controls';
+  1671→  1671→      header.appendChild(controlsContainer);
+  1672→  1672→    } else {
+  1673→  1673→      return;
+  1674→  1674→    }
+  1675→  1675→  }
+  1676→  1676→  
+  1677→  1677→  // Find the index of this website in the form
+  1678→  1678→  const allWebsiteElements = document.querySelectorAll('#websiteLinks .website-link');
+  1679→  1679→  let currentIndex = -1;
+  1680→  1680→  for (let i = 0; i < allWebsiteElements.length; i++) {
+  1681→  1681→    if (allWebsiteElements[i] === websiteElement) {
+  1682→  1682→      currentIndex = i;
+  1683→  1683→      break;
+  1684→  1684→    }
+  1685→  1685→  }
+  1686→  1686→  
+  1687→  1687→  if (currentIndex === -1) return; // Couldn't find index
+  1688→  1688→  
+  1689→  1689→  // Check if move buttons already exist
+  1690→  1690→  const moveButtons = controlsContainer.querySelector('.btn-move-up');
+  1691→  1691→  
+  1692→  1692→  if (hasPictureValue && !moveButtons) {
+  1693→  1693→    // Add move buttons
+  1694→  1694→    const moveUpBtn = document.createElement('button');
+  1695→  1695→    moveUpBtn.type = 'button';
+  1696→  1696→    moveUpBtn.className = 'btn-move-up';
+  1697→  1697→    moveUpBtn.title = 'Move up';
+  1698→  1698→    moveUpBtn.innerHTML = '<i class="fas fa-arrow-up"></i>';
+  1699→  1699→    moveUpBtn.onclick = () => moveWebsite(currentIndex, 'up');
+  1700→  1700→    
+  1701→  1701→    const moveDownBtn = document.createElement('button');
+  1702→  1702→    moveDownBtn.type = 'button';
+  1703→  1703→    moveDownBtn.className = 'btn-move-down';
+  1704→  1704→    moveDownBtn.title = 'Move down';
+  1705→  1705→    moveDownBtn.innerHTML = '<i class="fas fa-arrow-down"></i>';
+  1706→  1706→    moveDownBtn.onclick = () => moveWebsite(currentIndex, 'down');
+  1707→  1707→    
+  1708→  1708→    // Insert before the remove button
+  1709→  1709→    const removeBtn = controlsContainer.querySelector('.remove-website');
+  1710→  1710→    if (removeBtn) {
+  1711→  1711→      removeBtn.parentNode.insertBefore(moveDownBtn, removeBtn);
+  1712→  1712→      removeBtn.parentNode.insertBefore(moveUpBtn, removeBtn);
+  1713→  1713→    } else {
+  1714→  1714→      controlsContainer.appendChild(moveUpBtn);
+  1715→  1715→      controlsContainer.appendChild(moveDownBtn);
+  1716→  1716→    }
+  1717→  1717→  } else if (!hasPictureValue && moveButtons) {
+  1718→  1718→    // Remove move buttons
+  1719→  1719→    const moveUpBtn = controlsContainer.querySelector('.btn-move-up');
+  1720→  1720→    const moveDownBtn = controlsContainer.querySelector('.btn-move-down');
+  1721→  1721→    if (moveUpBtn) moveUpBtn.remove();
+  1722→  1722→    if (moveDownBtn) moveDownBtn.remove();
+  1723→  1723→  }
+  1724→  1724→}
+  1725→  1725→
+  1726→  1726→
+  1727→  1727→
+  1728→  1728→/**
+  1729→  1729→ * Reset form to initial state - IMPROVED VERSION
+  1730→  1730→ */
+  1731→  1731→function resetForm() {
+  1732→  1732→  const form = document.getElementById('addActressForm');
+  1733→  1733→  if (form) {
+  1734→  1734→    form.reset();
+  1735→  1735→  }
+  1736→  1736→  
+  1737→  1737→  const thumbPreview = document.getElementById('thumbPreview');
+  1738→  1738→  const galleryPreview = document.getElementById('galleryPreview');
+  1739→  1739→  const websiteLinks = document.getElementById('websiteLinks');
+  1740→  1740→  const tagsContainer = document.getElementById('tagsContainer');
+  1741→  1741→  
+  1742→  1742→  if (thumbPreview) thumbPreview.innerHTML = '';
+  1743→  1743→  if (galleryPreview) galleryPreview.innerHTML = '';
+  1744→  1744→  if (websiteLinks) websiteLinks.innerHTML = '';
+  1745→  1745→  if (tagsContainer) tagsContainer.innerHTML = '';
+  1746→  1746→  
+  1747→  1747→  // Only reset to "Add" mode if we're not currently editing
+  1748→  1748→  if (!editingSlug) {
+  1749→  1749→    resetFormToAddMode();
+  1750→  1750→  }
+  1751→  1751→}
+  1752→  1752→
+  1753→  1753→/**
+  1754→  1754→ * Reset form UI to "Add" mode
+  1755→  1755→ */
+  1756→  1756→function resetFormToAddMode() {
+  1757→  1757→  const tabTitle = document.querySelector('#addTab h3');
+  1758→  1758→  const submitButton = document.querySelector('#addTab .btn.primary');
+  1759→  1759→  
+  1760→  1760→  if (tabTitle) {
+  1761→  1761→    tabTitle.innerHTML = '<i class="fas fa-plus"></i> Add New Actress';
+  1762→  1762→  }
+  1763→  1763→  
+  1764→  1764→  if (submitButton) {
+  1765→  1765→    submitButton.innerHTML = '<i class="fas fa-plus-circle"></i> Add Actress';
+  1766→  1766→  }
+  1767→  1767→}
+  1768→  1768→
+  1769→  1769→/**
+  1770→  1770→ * Clear form with notification
+  1771→  1771→ */
+  1772→  1772→function clearForm() {
+  1773→  1773→  resetForm();
+  1774→  1774→  showToast('Form cleared', 'info', 2000);
+  1775→  1775→}
+  1776→  1776→
+  1777→  1777→// =============================================
+  1778→  1778→// TEMPLATE SYSTEM
+  1779→  1779→// =============================================
+  1780→  1780→
+  1781→  1781→/**
+  1782→  1782→ * Save form as template
+  1783→  1783→ */
+  1784→  1784→function saveTemplate() {
+  1785→  1785→  const formData = new FormData(document.getElementById('addActressForm'));
+  1786→  1786→  const template = {
+  1787→  1787→    name: document.getElementById('actressName').value,
+  1788→  1788→    category: document.getElementById('actressCategory').value,
+  1789→  1789→    tags: getTags(),
+  1790→  1790→    websites: []
+  1791→  1791→  };
+  1792→  1792→  
+  1793→  1793→  // Save website templates
+  1794→  1794→  const websiteNames = document.querySelectorAll('input[name="websiteName[]"]');
+  1795→  1795→  const websiteUrls = document.querySelectorAll('input[name="websiteUrl[]"]');
+  1796→  1796→  const websiteTypes = document.querySelectorAll('select[name="websiteType[]"]');
+  1797→  1797→  
+  1798→  1798→  for (let i = 0; i < websiteNames.length; i++) {
+  1799→  1799→    if (websiteNames[i].value && websiteUrls[i].value) {
+  1800→  1800→      template.websites.push({
+  1801→  1801→        name: websiteNames[i].value,
+  1802→  1802→        url: websiteUrls[i].value,
+  1803→  1803→        type: websiteTypes[i].value
+  1804→  1804→      });
+  1805→  1805→    }
+  1806→  1806→  }
+  1807→  1807→  
+  1808→  1808→  const templates = JSON.parse(localStorage.getItem('actressTemplates') || '[]');
+  1809→  1809→  templates.push(template);
+  1810→  1810→  localStorage.setItem('actressTemplates', JSON.stringify(templates));
+  1811→  1811→  
+  1812→  1812→  showToast('Template saved successfully', 'success');
+  1813→  1813→}
+  1814→  1814→
+  1815→  1815→// =============================================
+  1816→  1816→// ADMIN PANEL MANAGEMENT
+  1817→  1817→// =============================================
+  1818→  1818→
+  1819→  1819→/**
+  1820→  1820→ * Open admin panel
+  1821→  1821→ */
+  1822→  1822→function openAdminPanel() {
+  1823→  1823→  console.log('Opening admin panel...');
+  1824→  1824→  
+  1825→  1825→  // Hide the main gallery view
+  1826→  1826→  const galleryView = document.getElementById('galleryView');
+  1827→  1827→  const adminView = document.getElementById('adminView');
+  1828→  1828→  const viewModeContainer = document.querySelector('.view-mode-container');
+  1829→  1829→  
+  1830→  1830→  if (galleryView) galleryView.style.display = 'none';
+  1831→  1831→  if (viewModeContainer) viewModeContainer.style.display = 'none';
+  1832→  1832→  if (adminView) {
+  1833→  1833→    adminView.style.display = 'block';
+  1834→  1834→    adminView.style.opacity = '1';
+  1835→  1835→  }
+  1836→  1836→  
+  1837→  1837→  loadManageList();
+  1838→  1838→  showToast('Admin panel opened', 'info', 2000);
+  1839→  1839→  // Hide any opened panels when admin panel opens
+  1840→  1840→  ['searchSection','advancedFilters','viewModeContainer'].forEach(id => {
+  1841→  1841→    const panel = document.getElementById(id);
+  1842→  1842→    const btn = document.getElementById(getToggleForPanelId(id));
+  1843→  1843→    if (panel && !panel.classList.contains('hidden')) {
+  1844→  1844→      panel.classList.add('hidden');
+  1845→  1845→      panel.setAttribute('aria-hidden','true');
+  1846→  1846→    }
+  1847→  1847→    if (btn) {
+  1848→  1848→      btn.setAttribute('aria-expanded','false');
+  1849→  1849→      btn.classList.remove('active');
+  1850→  1850→    }
+  1851→  1851→  });
+  1852→  1852→}
+  1853→  1853→
+  1854→  1854→/**
+  1855→  1855→ * Close admin panel - UPDATED VERSION
+  1856→  1856→ */
+  1857→  1857→function closeAdminPanel() {
+  1858→  1858→  console.log('Closing admin panel...');
+  1859→  1859→  
+  1860→  1860→  // Show the main gallery view
+  1861→  1861→  const galleryView = document.getElementById('galleryView');
+  1862→  1862→  const adminView = document.getElementById('adminView');
+  1863→  1863→  const viewModeContainer = document.querySelector('.view-mode-container');
+  1864→  1864→  
+  1865→  1865→  if (adminView) adminView.style.display = 'none';
+  1866→  1866→  // Keep view-mode container hidden by default
+  1867→  1867→  if (viewModeContainer) {
+  1868→  1868→    viewModeContainer.style.display = 'block';
+  1869→  1869→    viewModeContainer.classList.add('hidden');
+  1870→  1870→    viewModeContainer.setAttribute('aria-hidden', 'true');
+  1871→  1871→  }
+  1872→  1872→  if (galleryView) {
+  1873→  1873→    galleryView.style.display = 'block';
+  1874→  1874→    galleryView.style.opacity = '1';
+  1875→  1875→  }
+  1876→  1876→  
+  1877→  1877→  // Reset form if editing
+  1878→  1878→  if (editingSlug) {
+  1879→  1879→    resetForm();
+  1880→  1880→    showToast('Edit cancelled', 'info');
+  1881→  1881→  }
+  1882→  1882→  
+  1883→  1883→  showToast('Admin panel closed', 'info', 2000);
+  1884→  1884→  // Ensure panels are closed
+  1885→  1885→  ['searchSection','advancedFilters','viewModeContainer'].forEach(id => {
+  1886→  1886→    const panel = document.getElementById(id);
+  1887→  1887→    const btn = document.getElementById(getToggleForPanelId(id));
+  1888→  1888→    if (panel && !panel.classList.contains('hidden')) {
+  1889→  1889→      panel.classList.add('hidden');
+  1890→  1890→      panel.setAttribute('aria-hidden','true');
+  1891→  1891→    }
+  1892→  1892→    if (btn) {
+  1893→  1893→      btn.setAttribute('aria-expanded','false');
+  1894→  1894→      btn.classList.remove('active');
+  1895→  1895→    }
+  1896→  1896→  });
+  1897→  1897→}
+  1898→  1898→
+  1899→  1899→/**
+  1900→  1900→ * Switch between admin tabs
+  1901→  1901→ */
+  1902→  1902→function switchTab(tabName) {
+  1903→  1903→  // Update tab buttons
+  1904→  1904→  document.querySelectorAll('.admin-tabs .tab-btn').forEach(btn => {
+  1905→  1905→    btn.classList.remove('active');
+  1906→  1906→  });
+  1907→  1907→  document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+  1908→  1908→
+  1909→  1909→  // Update tab content
+  1910→  1910→  document.querySelectorAll('.tab-content').forEach(content => {
+  1911→  1911→    content.classList.remove('active');
+  1912→  1912→  });
+  1913→  1913→  const tabContentEl = document.getElementById(`${tabName}Tab`);
+  1914→  1914→  if (tabContentEl) tabContentEl.classList.add('active');
+  1915→  1915→}
+  1916→  1916→
+  1917→  1917→// =============================================
+  1918→  1918→// MANAGE ACTRESSES FUNCTIONALITY
+  1919→  1919→// =============================================
+  1920→  1920→
+  1921→  1921→/**
+  1922→  1922→ * Load manage list with search filtering
+  1923→  1923→ */
+  1924→  1924→function loadManageList() {
+  1925→  1925→  const manageList = document.getElementById('manageList');
+  1926→  1926→  const searchTerm = document.getElementById('manageSearch').value.toLowerCase();
+  1927→  1927→  
+  1928→  1928→  console.log('Loading manage list, total actresses:', actresses.length);
+  1929→  1929→  
+  1930→  1930→  let filteredActresses = actresses;
+  1931→  1931→  if (searchTerm) {
+  1932→  1932→    filteredActresses = actresses.filter(actress => 
+  1933→  1933→      actress.name.toLowerCase().includes(searchTerm) ||
+  1934→  1934→      actress.category.toLowerCase().includes(searchTerm) ||
+  1935→  1935→      (actress.tags && actress.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
+  1936→  1936→    );
+  1937→  1937→  }
+  1938→  1938→  
+  1939→  1939→  console.log('Filtered actresses for manage list:', filteredActresses.length);
+  1940→  1940→  
+  1941→  1941→  if (filteredActresses.length === 0) {
+  1942→  1942→    manageList.innerHTML = `
+  1943→  1943→      <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+  1944→  1944→        <i class="fas fa-search" style="font-size: 48px; margin-bottom: 16px;"></i>
+  1945→  1945→        <h3>No actresses found</h3>
+  1946→  1946→        <p>Try adjusting your search terms</p>
+  1947→  1947→      </div>
+  1948→  1948→    `;
+  1949→  1949→    return;
+  1950→  1950→  }
+  1951→  1951→  
+  1952→  1952→  manageList.innerHTML = filteredActresses.map(actress => {
+  1953→  1953→    console.log('Generating manage item for:', actress.name, 'Slug:', actress.slug);
+  1954→  1954→    
+  1955→  1955→    return `
+  1956→  1956→    <div class="manage-item ${selectedActresses.has(actress.slug) ? 'selected' : ''}">
+  1957→  1957→      <div class="manage-item-info">
+  1958→  1958→        <input type="checkbox" class="manage-item-checkbox" ${selectedActresses.has(actress.slug) ? 'checked' : ''} 
+  1959→  1959→               onchange="toggleActressSelection('${actress.slug}', this.checked)">
+  1960→  1960→           <img src="${actress.thumb}" alt="${actress.name}" class="manage-item-thumb" loading="lazy" decoding="async"
+  1961→  1961→             onerror="this.src='https://via.placeholder.com/60x60/374151/9ca3af?text=No+Image'">
+  1962→  1962→        <div class="manage-item-details">
+  1963→  1963→          <h4>${actress.name}</h4>
+  1964→  1964→          <div class="category">${actress.category}</div>
+  1965→  1965→          <div class="small-muted">
+  1966→  1966→            ${actress.gallery.length} photos • ${actress.websites.length} links • ${actress.views || 0} views
+  1967→  1967→          </div>
+  1968→  1968→          <div class="small-muted">
+  1969→  1969→            Added: ${new Date(actress.createdAt).toLocaleDateString()}
+  1970→  1970→            ${actress.lastViewed ? ` • Last viewed: ${new Date(actress.lastViewed).toLocaleDateString()}` : ''}
+  1971→  1971→          </div>
+  1972→  1972→          ${actress.tags && actress.tags.length > 0 ? `
+  1973→  1973→            <div class="tags-small">
+  1974→  1974→              ${actress.tags.map(tag => `<span class="tag-small">${tag}</span>`).join('')}
+  1975→  1975→            </div>
+  1976→  1976→          ` : ''}
+  1977→  1977→        </div>
+  1978→  1978→      </div>
+  1979→  1979→      <div class="manage-item-actions">
+  1980→  1980→        <button class="btn warning" onclick="editActress('${actress.slug}')">
+  1981→  1981→          <i class="fas fa-edit"></i> Edit
+  1982→  1982→        </button>
+  1983→  1983→        <button class="btn danger" onclick="deleteActress('${actress.slug}')">
+  1984→  1984→          <i class="fas fa-trash"></i> Delete
+  1985→  1985→        </button>
+  1986→  1986→      </div>
+  1987→  1987→    </div>
+  1988→  1988→  `}).join('');
+  1989→  1989→  
+  1990→  1990→  console.log('Manage list loaded successfully');
+  1991→  1991→}
+  1992→  1992→
+  1993→  1993→/**
+  1994→  1994→ * Toggle actress selection for batch actions
+  1995→  1995→ */
+  1996→  1996→function toggleActressSelection(slug, selected) {
+  1997→  1997→  if (selected) {
+  1998→  1998→    selectedActresses.add(slug);
+  1999→  1999→  } else {
+  2000→  2000→    selectedActresses.delete(slug);
+
+[showing lines 1-2000 of 2002; use offset=2001 with limit to continue reading]

@@ -1,0 +1,2002 @@
+     1→:root {
+     2→  --gap: 20px;
+     3→  --card-radius: 16px;
+     4→  --primary-color: #6366f1;
+     5→  --primary-dark: #4f46e5;
+     6→  --primary-light: #8b5cf6;
+     7→  --worldwide-color: #ef4444;
+     8→  --onlyfans-color: #8b5cf6;
+     9→  --japanese-color: #06b6d4;
+    10→  --success-color: #10b981;
+    11→  --warning-color: #f59e0b;
+    12→  --danger-color: #ef4444;
+    13→  --info-color: #3b82f6;
+    14→  --text-color: #1f2937;
+    15→  --text-muted: #6b7280;
+    16→  --bg-color: #f8fafc;
+    17→  --card-bg: #ffffff;
+    18→  --border-color: #e5e7eb;
+    19→  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    20→  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    21→  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    22→  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+    23→}
+    24→
+    25→* {
+    26→  box-sizing: border-box;
+    27→  margin: 0;
+    28→  padding: 0;
+    29→}
+    30→
+    31→html {
+    32→  scroll-behavior: smooth;
+    33→}
+    34→
+    35→body {
+    36→  margin: 0;
+    37→  padding: 20px;
+    38→  background: var(--bg-color);
+    39→  color: var(--text-color);
+    40→  line-height: 1.6;
+    41→  min-height: 100vh;
+    42→  display: flex;
+    43→  flex-direction: column;
+    44→  transition: background-color 0.3s ease, color 0.3s ease;
+    45→}
+    46→
+    47→/* Loading Screen */
+    48→.loading-screen {
+    49→  position: fixed;
+    50→  top: 0;
+    51→  left: 0;
+    52→  width: 100%;
+    53→  height: 100%;
+    54→  background: var(--bg-color);
+    55→  display: flex;
+    56→  align-items: center;
+    57→  justify-content: center;
+    58→  z-index: 9999;
+    59→  transition: opacity 0.5s ease;
+    60→}
+    61→
+    62→.loading-screen.hidden {
+    63→  opacity: 0;
+    64→  pointer-events: none;
+    65→}
+    66→
+    67→.loading-spinner {
+    68→  text-align: center;
+    69→}
+    70→
+    71→.loading-spinner i {
+    72→  font-size: 3rem;
+    73→  color: var(--primary-color);
+    74→  margin-bottom: 1rem;
+    75→  animation: pulse 2s infinite;
+    76→}
+    77→
+    78→@keyframes pulse {
+    79→  0%, 100% { opacity: 1; }
+    80→  50% { opacity: 0.5; }
+    81→}
+    82→
+    83→/* Header & Navigation */
+    84→header {
+    85→  text-align: center;
+    86→  margin-bottom: 32px;
+    87→  position: relative; /* allow absolute-positioned overlays under header */
+    88→}
+    89→
+    90→.header-top {
+    91→  display: flex;
+    92→  justify-content: space-between;
+    93→  align-items: flex-start;
+    94→  margin-bottom: 16px;
+    95→  flex-wrap: wrap;
+    96→  gap: 16px;
+    97→}
+    98→
+    99→.header-brand h1 {
+   100→  margin: 0;
+   101→  font-size: 2.5rem;
+   102→  font-weight: 800;
+   103→  color: var(--text-color);
+   104→  display: flex;
+   105→  align-items: center;
+   106→  gap: 12px;
+   107→}
+   108→
+   109→.header-brand h1 i {
+   110→  color: var(--primary-color);
+   111→}
+   112→
+   113→.tagline {
+   114→  color: var(--text-muted);
+   115→  font-size: 1rem;
+   116→  margin-top: 4px;
+   117→  font-weight: 500;
+   118→}
+   119→
+   120→.header-controls {
+   121→  display: flex;
+   122→  gap: 12px;
+   123→}
+   124→
+   125→/* Header Icon Buttons */
+   126→.header-icon-btn {
+   127→  background: var(--card-bg);
+   128→  color: var(--text-color);
+   129→  border: 2px solid var(--border-color);
+   130→  border-radius: 12px;
+   131→  width: 48px;
+   132→  height: 48px;
+   133→  cursor: pointer;
+   134→  display: flex;
+   135→  align-items: center;
+   136→  justify-content: center;
+   137→  transition: all 0.3s ease;
+   138→  box-shadow: var(--shadow);
+   139→  font-size: 16px;
+   140→}
+   141→
+   142→.header-icon-btn:hover {
+   143→  transform: translateY(-2px);
+   144→  box-shadow: var(--shadow-hover);
+   145→  border-color: var(--primary-color);
+   146→  color: var(--primary-color);
+   147→}
+   148→
+   149→.header-icon-btn.active {
+   150→  background: var(--primary-color);
+   151→  color: white;
+   152→  border-color: var(--primary-color);
+   153→}
+   154→
+   155→/* Stats Bar */
+   156→.stats-bar {
+   157→  display: flex;
+   158→  justify-content: center;
+   159→  gap: 24px;
+   160→  margin: 20px 0;
+   161→  padding: 16px;
+   162→  background: var(--card-bg);
+   163→  border-radius: var(--card-radius);
+   164→  box-shadow: var(--shadow);
+   165→  flex-wrap: wrap;
+   166→}
+   167→
+   168→.stat-item {
+   169→  display: flex;
+   170→  align-items: center;
+   171→  gap: 8px;
+   172→  font-weight: 600;
+   173→  color: var(--text-color);
+   174→  padding: 8px 16px;
+   175→  background: var(--bg-color);
+   176→  border-radius: 12px;
+   177→}
+   178→
+   179→.stat-item i {
+   180→  color: var(--primary-color);
+   181→}
+   182→
+   183→/* Search Section */
+   184→.search-section {
+   185→  margin: 24px 0;
+   186→}
+   187→
+   188→/* Make toggled panels appear elevated when shown */
+   189→/* Panels behave as overlays under the header */
+   190→.search-section:not(.hidden),
+   191→.advanced-filters:not(.hidden),
+   192→.view-mode-container:not(.hidden) {
+   193→  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+   194→  background: var(--card-bg);
+   195→  z-index: 1000;
+   196→  border-radius: 12px;
+   197→  padding: 12px;
+   198→  margin-bottom: 16px;
+   199→}
+   200→
+   201→.search-section,
+   202→.advanced-filters,
+   203→.view-mode-container {
+   204→  position: absolute;
+   205→  left: 50%;
+   206→  transform: translateX(-50%);
+   207→  top: 64px; /* below header (adjust if header height changes) */
+   208→  width: min(960px, calc(100% - 32px));
+   209→  display: block; /* overridden by .hidden */
+   210→  opacity: 0;
+   211→  visibility: hidden;
+   212→  transition: opacity 200ms ease, transform 200ms ease, visibility 200ms;
+   213→}
+   214→
+   215→.search-section:not(.hidden),
+   216→.advanced-filters:not(.hidden),
+   217→.view-mode-container:not(.hidden) {
+   218→  transform: translateX(-50%) translateY(0);
+   219→  opacity: 1;
+   220→  visibility: visible;
+   221→}
+   222→
+   223→/* Slightly different style on mobile - full width */
+   224→@media (max-width: 768px) {
+   225→  .search-section, .advanced-filters, .view-mode-container {
+   226→    left: 50%;
+   227→    transform: translateX(-50%);
+   228→    top: 54px;
+   229→    width: calc(100% - 20px);
+   230→    border-radius: 10px;
+   231→  }
+   232→}
+   233→
+   234→.search-container {
+   235→  position: relative;
+   236→  display: inline-flex;
+   237→  align-items: center;
+   238→  width: 100%;
+   239→  max-width: 520px;
+   240→  margin-bottom: 8px;
+   241→}
+   242→
+   243→.search-container .fa-search {
+   244→  position: absolute;
+   245→  left: 16px;
+   246→  color: var(--text-muted);
+   247→  z-index: 2;
+   248→}
+   249→
+   250→.search-shortcut-hint {
+   251→  position: absolute;
+   252→  right: 12px;
+   253→  background: var(--bg-color);
+   254→  padding: 4px 8px;
+   255→  border-radius: 6px;
+   256→  font-size: 12px;
+   257→  color: var(--text-muted);
+   258→  border: 1px solid var(--border-color);
+   259→}
+   260→
+   261→input#searchBar, input[type="search"] {
+   262→  width: 100%;
+   263→  padding: 14px 14px 14px 44px;
+   264→  border-radius: 12px;
+   265→  border: 2px solid var(--border-color);
+   266→  font-size: 16px;
+   267→  transition: all 0.3s ease;
+   268→  background: var(--card-bg);
+   269→  box-shadow: var(--shadow);
+   270→  font-family: inherit;
+   271→}
+   272→
+   273→input:focus {
+   274→  outline: none;
+   275→  border-color: var(--primary-color);
+   276→  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+   277→}
+   278→
+   279→.search-info {
+   280→  color: var(--text-muted);
+   281→  font-size: 14px;
+   282→  display: flex;
+   283→  justify-content: space-between;
+   284→  align-items: center;
+   285→}
+   286→
+   287→.search-time {
+   288→  font-size: 12px;
+   289→  opacity: 0.7;
+   290→}
+   291→
+   292→.search-container.small {
+   293→  width: 280px;
+   294→  max-width: 100%;
+   295→}
+   296→
+   297→/* Advanced Filters */
+   298→.advanced-filters {
+   299→  display: flex;
+   300→  align-items: center;
+   301→  justify-content: center;
+   302→  gap: 20px;
+   303→  margin: 20px 0;
+   304→  padding: 16px;
+   305→  background: var(--card-bg);
+   306→  border-radius: var(--card-radius);
+   307→  box-shadow: var(--shadow);
+   308→  flex-wrap: wrap;
+   309→}
+   310→
+   311→.filter-group {
+   312→  display: flex;
+   313→  align-items: center;
+   314→  gap: 10px;
+   315→}
+   316→
+   317→.filter-tags {
+   318→  display: flex;
+   319→  gap: 8px;
+   320→  flex-wrap: wrap;
+   321→}
+   322→
+   323→.filter-tag {
+   324→  padding: 4px 12px;
+   325→  background: var(--bg-color);
+   326→  border: 1px solid var(--border-color);
+   327→  border-radius: 20px;
+   328→  font-size: 12px;
+   329→  cursor: pointer;
+   330→  transition: all 0.3s ease;
+   331→}
+   332→
+   333→.filter-tag.active {
+   334→  background: var(--primary-color);
+   335→  color: white;
+   336→  border-color: var(--primary-color);
+   337→}
+   338→
+   339→.filter-select {
+   340→  padding: 8px 12px;
+   341→  border: 1px solid var(--border-color);
+   342→  border-radius: 8px;
+   343→  background: var(--card-bg);
+   344→  color: var(--text-color);
+   345→}
+   346→
+   347→/* Main App Container */
+   348→#app {
+   349→  display: block;
+   350→  opacity: 1;
+   351→  flex: 1;
+   352→}
+   353→
+   354→/* View Mode Container */
+   355→.view-mode-container {
+   356→  display: flex;
+   357→  justify-content: center;
+   358→  margin: 20px 0;
+   359→}
+   360→
+   361→.view-mode-toggle {
+   362→  display: flex;
+   363→  gap: 8px;
+   364→  background: var(--card-bg);
+   365→  padding: 8px;
+   366→  border-radius: 12px;
+   367→  box-shadow: var(--shadow);
+   368→  border: 1px solid var(--border-color);
+   369→}
+   370→
+   371→.view-mode-btn {
+   372→  padding: 10px 16px;
+   373→  border: 2px solid transparent;
+   374→  background: transparent;
+   375→  color: var(--text-color);
+   376→  border-radius: 8px;
+   377→  cursor: pointer;
+   378→  transition: all 0.3s ease;
+   379→  display: flex;
+   380→  align-items: center;
+   381→  gap: 6px;
+   382→  font-size: 14px;
+   383→  font-weight: 600;
+   384→}
+   385→
+   386→.view-mode-btn:hover {
+   387→  background: var(--bg-color);
+   388→  transform: translateY(-2px);
+   389→}
+   390→
+   391→.view-mode-btn.active {
+   392→  background: var(--primary-color);
+   393→  color: white;
+   394→  border-color: var(--primary-color);
+   395→}
+   396→
+   397→.view-mode-text {
+   398→  display: inline;
+   399→}
+   400→
+   401→/* Gallery View */
+   402→#galleryView {
+   403→  display: block;
+   404→}
+   405→
+   406→.view-grid .grid {
+   407→  display: grid;
+   408→  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+   409→  gap: var(--gap);
+   410→}
+   411→
+   412→.view-masonry .grid {
+   413→  display: grid;
+   414→  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+   415→  gap: var(--gap);
+   416→  align-items: start;
+   417→}
+   418→
+   419→.view-masonry .card {
+   420→  break-inside: avoid;
+   421→}
+   422→
+   423→.view-list .grid {
+   424→  display: flex;
+   425→  flex-direction: column;
+   426→  gap: 12px;
+   427→}
+   428→
+   429→.view-list .card {
+   430→  display: flex;
+   431→  align-items: center;
+   432→  text-align: left;
+   433→  padding: 16px;
+   434→  height: auto;
+   435→}
+   436→
+   437→.view-list .card img.thumb {
+   438→  width: 80px;
+   439→  height: 80px;
+   440→  margin-right: 16px;
+   441→  flex-shrink: 0;
+   442→}
+   443→
+   444→.view-list .card .name {
+   445→  flex: 1;
+   446→  padding: 0;
+   447→  font-size: 18px;
+   448→}
+   449→
+   450→.view-list .card .category-tag {
+   451→  margin-left: 12px;
+   452→}
+   453→
+   454→.view-list .card .links-count {
+   455→  margin-left: auto;
+   456→  padding-right: 12px;
+   457→}
+   458→
+   459→/* Slideshow View */
+   460→.view-slideshow .grid {
+   461→  display: flex;
+   462→  overflow-x: auto;
+   463→  gap: 16px;
+   464→  padding: 20px 0;
+   465→  scroll-snap-type: x mandatory;
+   466→}
+   467→
+   468→.view-slideshow .card {
+   469→  flex: 0 0 auto;
+   470→  width: 300px;
+   471→  scroll-snap-align: start;
+   472→}
+   473→
+   474→.view-slideshow .card img.thumb {
+   475→  height: 400px;
+   476→}
+   477→
+   478→/* Grid & Cards */
+   479→.grid {
+   480→  display: grid;
+   481→  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+   482→  gap: var(--gap);
+   483→  align-items: start;
+   484→  flex: 1;
+   485→}
+   486→
+   487→.card {
+   488→  background: var(--card-bg);
+   489→  border-radius: var(--card-radius);
+   490→  box-shadow: var(--shadow);
+   491→  overflow: hidden;
+   492→  cursor: pointer;
+   493→  text-align: center;
+   494→  transition: all 0.3s ease;
+   495→  padding-bottom: 16px;
+   496→  position: relative;
+   497→  border: 1px solid var(--border-color);
+   498→}
+   499→
+   500→.card:hover {
+   501→  transform: translateY(-8px);
+   502→  box-shadow: var(--shadow-hover);
+   503→}
+   504→
+   505→.card::before {
+   506→  content: '';
+   507→  position: absolute;
+   508→  top: 0;
+   509→  left: 0;
+   510→  right: 0;
+   511→  height: 4px;
+   512→  background: var(--primary-color);
+   513→  opacity: 0;
+   514→  transition: opacity 0.3s ease;
+   515→}
+   516→
+   517→.card:hover::before {
+   518→  opacity: 1;
+   519→}
+   520→
+   521→.card.worldwide::before {
+   522→  background: var(--worldwide-color);
+   523→  opacity: 1;
+   524→}
+   525→
+   526→.card.japanese::before {
+   527→  background: var(--japanese-color);
+   528→  opacity: 1;
+   529→}
+   530→
+   531→.card.onlyfans::before {
+   532→  background: var(--onlyfans-color);
+   533→  opacity: 1;
+   534→}
+   535→
+   536→.card img.thumb {
+   537→  width: 100%;
+   538→  height: 280px;
+   539→  object-fit: cover;
+   540→  display: block;
+   541→  transition: transform 0.3s ease;
+   542→}
+   543→
+   544→.card:hover img.thumb {
+   545→  transform: scale(1.05);
+   546→}
+   547→
+   548→.card .name {
+   549→  padding: 16px 12px 6px;
+   550→  font-weight: 700;
+   551→  font-size: 16px;
+   552→  color: var(--text-color);
+   553→  line-height: 1.3;
+   554→}
+   555→
+   556→.card .category-tag {
+   557→  display: inline-block;
+   558→  padding: 4px 12px;
+   559→  border-radius: 20px;
+   560→  font-size: 11px;
+   561→  font-weight: 700;
+   562→  margin-top: 6px;
+   563→  text-transform: uppercase;
+   564→  letter-spacing: 0.5px;
+   565→}
+   566→
+   567→.card.worldwide .category-tag {
+   568→  background: rgba(239, 68, 68, 0.1);
+   569→  color: var(--worldwide-color);
+   570→}
+   571→
+   572→.card.japanese .category-tag {
+   573→  background: rgba(6, 182, 212, 0.1);
+   574→  color: var(--japanese-color);
+   575→}
+   576→
+   577→.card.onlyfans .category-tag {
+   578→  background: rgba(139, 92, 246, 0.1);
+   579→  color: var(--onlyfans-color);
+   580→}
+   581→
+   582→.card .links-count {
+   583→  font-size: 13px;
+   584→  color: var(--text-muted);
+   585→  margin-top: 6px;
+   586→  display: flex;
+   587→  align-items: center;
+   588→  justify-content: center;
+   589→  gap: 4px;
+   590→}
+   591→
+   592→.card .views-count {
+   593→  position: absolute;
+   594→  top: 8px;
+   595→  right: 8px;
+   596→  background: rgba(0, 0, 0, 0.7);
+   597→  color: white;
+   598→  padding: 4px 8px;
+   599→  border-radius: 12px;
+   600→  font-size: 11px;
+   601→  display: flex;
+   602→  align-items: center;
+   603→  gap: 4px;
+   604→}
+   605→
+   606→/* Card Tags */
+   607→.card-tags {
+   608→  display: flex;
+   609→  gap: 4px;
+   610→  flex-wrap: wrap;
+   611→  margin: 8px 12px 4px;
+   612→  justify-content: center;
+   613→}
+   614→
+   615→/* Compact card mode: hide auxiliary info and make images slightly larger */
+   616→body.compact-cards .card {
+   617→  padding-bottom: 10px;
+   618→}
+   619→body.compact-cards .card .name { font-size: 15px; }
+   620→body.compact-cards .card .category-tag, body.compact-cards .card .links-count, body.compact-cards .card-tags {
+   621→  display: none;
+   622→}
+   623→body.compact-cards .card img.thumb { height: 220px; }
+   624→
+   625→/* Ensure manage list compact visuals */
+   626→body.compact-cards .manage-item-thumb { width: 40px; height: 40px; }
+   627→body.compact-cards .manage-item-details h4 { font-size: 13px; }
+   628→
+   629→.card-tag {
+   630→  background: var(--bg-color);
+   631→  color: var(--text-muted);
+   632→  padding: 2px 8px;
+   633→  border-radius: 10px;
+   634→  font-size: 10px;
+   635→  border: 1px solid var(--border-color);
+   636→}
+   637→
+   638→.card-tag-more {
+   639→  background: var(--primary-color);
+   640→  color: white;
+   641→  padding: 2px 6px;
+   642→  border-radius: 10px;
+   643→  font-size: 10px;
+   644→}
+   645→
+   646→/* Gallery Styles */
+   647→.gallery-grid {
+   648→  display: grid;
+   649→  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+   650→  gap: 16px;
+   651→  margin: 20px 0;
+   652→}
+   653→
+   654→.gallery-grid img {
+   655→  width: 100%;
+   656→  height: 290px;
+   657→  object-fit: cover;
+   658→  border-radius: 8px;
+   659→  cursor: pointer;
+   660→  transition: transform 0.3s ease;
+   661→}
+   662→
+   663→.gallery-grid img:hover {
+   664→  transform: scale(1.05);
+   665→}
+   666→
+   667→/* Links Section Styles */
+   668→.links-section {
+   669→  margin: 30px 0;
+   670→}
+   671→
+   672→.section-title {
+   673→  display: flex;
+   674→  align-items: center;
+   675→  gap: 8px;
+   676→  margin-bottom: 16px;
+   677→  color: var(--text-color);
+   678→}
+   679→
+   680→.picture-links-grid {
+   681→  display: grid;
+   682→  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+   683→  gap: 16px;
+   684→}
+   685→
+   686→.picture-link {
+   687→  display: block;
+   688→  text-decoration: none;
+   689→  border-radius: 8px;
+   690→  overflow: hidden;
+   691→  transition: transform 0.3s ease;
+   692→}
+   693→
+   694→.picture-link:hover {
+   695→  transform: translateY(-4px);
+   696→}
+   697→
+   698→.picture-link img {
+   699→  width: 100%;
+   700→  height: 200px;
+   701→  object-fit: cover;
+   702→}
+   703→
+   704→.picture-link-title {
+   705→  padding: 8px;
+   706→  background: var(--card-bg);
+   707→  color: var(--text-color);
+   708→  text-align: center;
+   709→  font-size: 12px;
+   710→  font-weight: 600;
+   711→}
+   712→
+   713→.regular-links-list {
+   714→  display: flex;
+   715→  flex-direction: column;
+   716→  gap: 8px;
+   717→}
+   718→
+   719→.list-link {
+   720→  display: flex;
+   721→  align-items: center;
+   722→  gap: 8px;
+   723→  text-decoration: none;
+   724→  padding: 12px 16px;
+   725→  border-radius: 8px;
+   726→  transition: all 0.3s ease;
+   727→}
+   728→
+   729→/* Gallery Header */
+   730→.gallery-header {
+   731→  margin-bottom: 30px;
+   732→  padding-bottom: 20px;
+   733→  border-bottom: 2px solid var(--border-color);
+   734→}
+   735→
+   736→.gallery-title {
+   737→  font-size: 2rem;
+   738→  margin: 10px 0;
+   739→  color: var(--text-color);
+   740→}
+   741→
+   742→/* No Images State */
+   743→.no-images {
+   744→  text-align: center;
+   745→  padding: 40px;
+   746→  color: var(--text-muted);
+   747→  grid-column: 1 / -1;
+   748→}
+   749→
+   750→/* Modals */
+   751→.modal {
+   752→  display: none;
+   753→  position: fixed;
+   754→  top: 0;
+   755→  left: 0;
+   756→  width: 100%;
+   757→  height: 100%;
+   758→  background: rgba(0, 0, 0, 0.5);
+   759→  z-index: 1000;
+   760→  align-items: center;
+   761→  justify-content: center;
+   762→}
+   763→
+   764→.modal.active {
+   765→  display: flex;
+   766→}
+   767→
+   768→.modal-content {
+   769→  background: var(--card-bg);
+   770→  border-radius: var(--card-radius);
+   771→  max-width: 500px;
+   772→  width: 90%;
+   773→  max-height: 90vh;
+   774→  overflow-y: auto;
+   775→  box-shadow: var(--shadow-lg);
+   776→}
+   777→
+   778→.modal-header {
+   779→  display: flex;
+   780→  justify-content: space-between;
+   781→  align-items: center;
+   782→  padding: 20px;
+   783→  border-bottom: 1px solid var(--border-color);
+   784→}
+   785→
+   786→.modal-close {
+   787→  background: none;
+   788→  border: none;
+   789→  font-size: 24px;
+   790→  cursor: pointer;
+   791→  color: var(--text-muted);
+   792→}
+   793→
+   794→.modal-body {
+   795→  padding: 20px;
+   796→}
+   797→
+   798→.modal-footer {
+   799→  padding: 20px;
+   800→  border-top: 1px solid var(--border-color);
+   801→  display: flex;
+   802→  justify-content: flex-end;
+   803→  gap: 12px;
+   804→}
+   805→
+   806→/* Quick Add Tabs */
+   807→.quick-add-tabs {
+   808→  display: flex;
+   809→  gap: 8px;
+   810→  margin-bottom: 20px;
+   811→  border-bottom: 1px solid var(--border-color);
+   812→}
+   813→
+   814→.quick-add-tabs .tab-btn {
+   815→  padding: 10px 16px;
+   816→  background: none;
+   817→  border: none;
+   818→  border-bottom: 3px solid transparent;
+   819→  cursor: pointer;
+   820→  color: var(--text-muted);
+   821→  transition: all 0.3s ease;
+   822→}
+   823→
+   824→.quick-add-tabs .tab-btn.active {
+   825→  color: var(--primary-color);
+   826→  border-bottom-color: var(--primary-color);
+   827→}
+   828→
+   829→.social-platforms {
+   830→  display: grid;
+   831→  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+   832→  gap: 12px;
+   833→}
+   834→
+   835→.platform-option {
+   836→  padding: 20px;
+   837→  border: 2px solid var(--border-color);
+   838→  border-radius: 12px;
+   839→  text-align: center;
+   840→  cursor: pointer;
+   841→  transition: all 0.3s ease;
+   842→  display: flex;
+   843→  flex-direction: column;
+   844→  align-items: center;
+   845→  gap: 8px;
+   846→}
+   847→
+   848→.platform-option:hover {
+   849→  border-color: var(--primary-color);
+   850→  transform: translateY(-2px);
+   851→}
+   852→
+   853→.platform-option i {
+   854→  font-size: 24px;
+   855→}
+   856→
+   857→/* Image Viewer */
+   858→.image-viewer .image-viewer-content {
+   859→  position: relative;
+   860→  background: var(--card-bg);
+   861→  border-radius: var(--card-radius);
+   862→  max-width: 90vw;
+   863→  max-height: 90vh;
+   864→  display: flex;
+   865→  align-items: center;
+   866→  justify-content: center;
+   867→}
+   868→
+   869→.image-viewer-close {
+   870→  position: absolute;
+   871→  top: 20px;
+   872→  right: 20px;
+   873→  background: rgba(0, 0, 0, 0.7);
+   874→  color: white;
+   875→  border: none;
+   876→  border-radius: 50%;
+   877→  width: 40px;
+   878→  height: 40px;
+   879→  cursor: pointer;
+   880→  z-index: 10;
+   881→}
+   882→
+   883→.image-nav {
+   884→  position: absolute;
+   885→  top: 50%;
+   886→  transform: translateY(-50%);
+   887→  background: rgba(0, 0, 0, 0.7);
+   888→  color: white;
+   889→  border: none;
+   890→  border-radius: 50%;
+   891→  width: 50px;
+   892→  height: 50px;
+   893→  cursor: pointer;
+   894→  z-index: 10;
+   895→  display: flex;
+   896→  align-items: center;
+   897→  justify-content: center;
+   898→}
+   899→
+   900→.image-nav.prev {
+   901→  left: 20px;
+   902→}
+   903→
+   904→.image-nav.next {
+   905→  right: 20px;
+   906→}
+   907→
+   908→.image-container {
+   909→  position: relative;
+   910→  max-width: 100%;
+   911→  max-height: 100%;
+   912→}
+   913→
+   914→#viewerImage {
+   915→  max-width: 100%;
+   916→  max-height: 80vh;
+   917→  object-fit: contain;
+   918→}
+   919→
+   920→.image-info {
+   921→  position: absolute;
+   922→  bottom: 0;
+   923→  left: 0;
+   924→  right: 0;
+   925→  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+   926→  color: white;
+   927→  padding: 20px;
+   928→  text-align: center;
+   929→}
+   930→
+   931→.image-tools {
+   932→  position: absolute;
+   933→  bottom: 20px;
+   934→  left: 50%;
+   935→  transform: translateX(-50%);
+   936→  display: flex;
+   937→  gap: 10px;
+   938→  background: rgba(0, 0, 0, 0.7);
+   939→  padding: 10px;
+   940→  border-radius: 25px;
+   941→}
+   942→
+   943→.tool-btn {
+   944→  background: none;
+   945→  border: none;
+   946→  color: white;
+   947→  width: 40px;
+   948→  height: 40px;
+   949→  border-radius: 50%;
+   950→  cursor: pointer;
+   951→  display: flex;
+   952→  align-items: center;
+   953→  justify-content: center;
+   954→  transition: background 0.3s ease;
+   955→}
+   956→
+   957→.tool-btn:hover {
+   958→  background: rgba(255, 255, 255, 0.2);
+   959→}
+   960→
+   961→/* Admin Panel */
+   962→.admin-panel {
+   963→  background: var(--card-bg);
+   964→  border-radius: var(--card-radius);
+   965→  padding: 24px;
+   966→  box-shadow: var(--shadow-lg);
+   967→  margin-bottom: 24px;
+   968→  border: 1px solid var(--border-color);
+   969→}
+   970→
+   971→.admin-header {
+   972→  display: flex;
+   973→  justify-content: space-between;
+   974→  align-items: center;
+   975→  margin-bottom: 24px;
+   976→  padding-bottom: 16px;
+   977→  border-bottom: 2px solid var(--border-color);
+   978→}
+   979→
+   980→.admin-tabs {
+   981→  display: flex;
+   982→  gap: 8px;
+   983→  margin-bottom: 24px;
+   984→  border-bottom: 1px solid var(--border-color);
+   985→  flex-wrap: wrap;
+   986→}
+   987→
+   988→.tab-btn {
+   989→  padding: 12px 20px;
+   990→  background: none;
+   991→  border: none;
+   992→  border-bottom: 3px solid transparent;
+   993→  cursor: pointer;
+   994→  font-weight: 600;
+   995→  color: var(--text-muted);
+   996→  transition: all 0.3s ease;
+   997→  border-radius: 8px 8px 0 0;
+   998→  display: flex;
+   999→  align-items: center;
+  1000→  gap: 8px;
+  1001→}
+  1002→
+  1003→.tab-btn:hover {
+  1004→  color: var(--primary-color);
+  1005→  background: rgba(99, 102, 241, 0.05);
+  1006→}
+  1007→
+  1008→.tab-btn.active {
+  1009→  color: var(--primary-color);
+  1010→  border-bottom-color: var(--primary-color);
+  1011→  background: rgba(99, 102, 241, 0.1);
+  1012→}
+  1013→
+  1014→.tab-content {
+  1015→  display: none;
+  1016→}
+  1017→
+  1018→.tab-content.active {
+  1019→  display: block;
+  1020→  animation: fadeIn 0.3s ease;
+  1021→}
+  1022→
+  1023→@keyframes fadeIn {
+  1024→  from { opacity: 0; transform: translateY(10px); }
+  1025→  to { opacity: 1; transform: translateY(0); }
+  1026→}
+  1027→
+  1028→/* Forms */
+  1029→.admin-form {
+  1030→  max-width: 800px;
+  1031→}
+  1032→
+  1033→.form-row {
+  1034→  display: flex;
+  1035→  gap: 16px;
+  1036→  flex-wrap: wrap;
+  1037→}
+  1038→
+  1039→.form-group {
+  1040→  margin-bottom: 20px;
+  1041→  flex: 1;
+  1042→  min-width: 200px;
+  1043→}
+  1044→
+  1045→.form-group label {
+  1046→  display: block;
+  1047→  margin-bottom: 6px;
+  1048→  font-weight: 600;
+  1049→  color: var(--text-color);
+  1050→}
+  1051→
+  1052→.form-group input,
+  1053→.form-group select,
+  1054→.form-group textarea {
+  1055→  width: 100%;
+  1056→  padding: 12px;
+  1057→  border: 2px solid var(--border-color);
+  1058→  border-radius: 8px;
+  1059→  font-size: 14px;
+  1060→  background: var(--card-bg);
+  1061→  color: var(--text-color);
+  1062→  font-family: inherit;
+  1063→  transition: all 0.3s ease;
+  1064→}
+  1065→
+  1066→.form-group input:focus,
+  1067→.form-group select:focus,
+  1068→.form-group textarea:focus {
+  1069→  outline: none;
+  1070→  border-color: var(--primary-color);
+  1071→  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  1072→}
+  1073→
+  1074→.form-group textarea {
+  1075→  min-height: 100px;
+  1076→  resize: vertical;
+  1077→}
+  1078→
+  1079→.form-group small {
+  1080→  display: block;
+  1081→  margin-top: 4px;
+  1082→  color: var(--text-muted);
+  1083→  font-size: 12px;
+  1084→}
+  1085→
+  1086→/* Category ComboBox */
+  1087→.category-combobox {
+  1088→  position: relative;
+  1089→}
+  1090→
+  1091→.suggestions-dropdown {
+  1092→  position: absolute;
+  1093→  top: 100%;
+  1094→  left: 0;
+  1095→  right: 0;
+  1096→  background: var(--card-bg);
+  1097→  border: 1px solid var(--border-color);
+  1098→  border-radius: 8px;
+  1099→  max-height: 200px;
+  1100→  overflow-y: auto;
+  1101→  z-index: 1000;
+  1102→  box-shadow: var(--shadow-lg);
+  1103→  display: none;
+  1104→}
+  1105→
+  1106→.suggestion-item {
+  1107→  padding: 10px 12px;
+  1108→  cursor: pointer;
+  1109→  border-bottom: 1px solid var(--border-color);
+  1110→  transition: background 0.2s ease;
+  1111→}
+  1112→
+  1113→.suggestion-item:hover {
+  1114→  background: var(--bg-color);
+  1115→}
+  1116→
+  1117→.suggestion-item:last-child {
+  1118→  border-bottom: none;
+  1119→}
+  1120→
+  1121→.suggestion-item.active {
+  1122→  background: var(--primary-color);
+  1123→  color: white;
+  1124→}
+  1125→
+  1126→/* Existing Categories */
+  1127→.existing-categories {
+  1128→  display: flex;
+  1129→  gap: 8px;
+  1130→  flex-wrap: wrap;
+  1131→  margin-top: 8px;
+  1132→}
+  1133→
+  1134→.category-badge {
+  1135→  background: var(--bg-color);
+  1136→  border: 1px solid var(--border-color);
+  1137→  padding: 4px 8px;
+  1138→  border-radius: 12px;
+  1139→  font-size: 12px;
+  1140→  cursor: pointer;
+  1141→  transition: all 0.3s ease;
+  1142→}
+  1143→
+  1144→.category-badge:hover {
+  1145→  background: var(--primary-color);
+  1146→  color: white;
+  1147→  border-color: var(--primary-color);
+  1148→}
+  1149→
+  1150→.category-badge.active {
+  1151→  background: var(--primary-color);
+  1152→  color: white;
+  1153→  border-color: var(--primary-color);
+  1154→}
+  1155→
+  1156→/* Tags */
+  1157→.tags-container {
+  1158→  display: flex;
+  1159→  gap: 8px;
+  1160→  flex-wrap: wrap;
+  1161→  margin-top: 8px;
+  1162→}
+  1163→
+  1164→.tag {
+  1165→  background: var(--primary-color);
+  1166→  color: white;
+  1167→  padding: 4px 12px;
+  1168→  border-radius: 20px;
+  1169→  font-size: 12px;
+  1170→  display: flex;
+  1171→  align-items: center;
+  1172→  gap: 6px;
+  1173→}
+  1174→
+  1175→.tag-remove {
+  1176→  background: none;
+  1177→  border: none;
+  1178→  color: white;
+  1179→  cursor: pointer;
+  1180→  padding: 0;
+  1181→  width: 16px;
+  1182→  height: 16px;
+  1183→  border-radius: 50%;
+  1184→  display: flex;
+  1185→  align-items: center;
+  1186→  justify-content: center;
+  1187→}
+  1188→
+  1189→.tag-remove:hover {
+  1190→  background: rgba(255, 255, 255, 0.3);
+  1191→}
+  1192→
+  1193→/* Image Source Tabs */
+  1194→.image-source-tabs {
+  1195→  display: flex;
+  1196→  gap: 8px;
+  1197→  margin-bottom: 16px;
+  1198→  border-bottom: 1px solid var(--border-color);
+  1199→}
+  1200→
+  1201→.source-tab {
+  1202→  padding: 8px 16px;
+  1203→  background: none;
+  1204→  border: none;
+  1205→  border-bottom: 2px solid transparent;
+  1206→  cursor: pointer;
+  1207→  color: var(--text-muted);
+  1208→  transition: all 0.3s ease;
+  1209→}
+  1210→
+  1211→.source-tab.active {
+  1212→  color: var(--primary-color);
+  1213→  border-bottom-color: var(--primary-color);
+  1214→}
+  1215→
+  1216→.source-content {
+  1217→  display: none;
+  1218→}
+  1219→
+  1220→.source-content.active {
+  1221→  display: block;
+  1222→}
+  1223→
+  1224→.image-preview {
+  1225→  display: flex;
+  1226→  gap: 12px;
+  1227→  margin-top: 12px;
+  1228→  flex-wrap: wrap;
+  1229→}
+  1230→
+  1231→.preview-image {
+  1232→  width: 100px;
+  1233→  height: 100px;
+  1234→  object-fit: cover;
+  1235→  border-radius: 8px;
+  1236→  border: 2px solid var(--border-color);
+  1237→  transition: transform 0.3s ease;
+  1238→}
+  1239→
+  1240→.preview-image:hover {
+  1241→  transform: scale(1.05);
+  1242→}
+  1243→
+  1244→/* Website Links */
+  1245→.website-link {
+  1246→  background: var(--bg-color);
+  1247→  padding: 16px;
+  1248→  border-radius: 8px;
+  1249→  margin-bottom: 12px;
+  1250→  border: 1px solid var(--border-color);
+  1251→}
+  1252→
+  1253→.website-link-header {
+  1254→  display: flex;
+  1255→  justify-content: space-between;
+  1256→  align-items: center;
+  1257→  margin-bottom: 12px;
+  1258→}
+  1259→
+  1260→.website-link-controls {
+  1261→  display: flex;
+  1262→  gap: 8px;
+  1263→  align-items: center;
+  1264→}
+  1265→
+  1266→.btn-move-up,
+  1267→.btn-move-down {
+  1268→  background: var(--primary-color);
+  1269→  color: white;
+  1270→  border: none;
+  1271→  border-radius: 6px;
+  1272→  width: 32px;
+  1273→  height: 32px;
+  1274→  cursor: pointer;
+  1275→  display: flex;
+  1276→  align-items: center;
+  1277→  justify-content: center;
+  1278→  transition: all 0.3s ease;
+  1279→  font-size: 14px;
+  1280→}
+  1281→
+  1282→.btn-move-up:hover,
+  1283→.btn-move-down:hover {
+  1284→  background: var(--primary-dark);
+  1285→  transform: scale(1.1);
+  1286→}
+  1287→
+  1288→.btn-move-up:active,
+  1289→.btn-move-down:active {
+  1290→  transform: scale(0.95);
+  1291→}
+  1292→
+  1293→.remove-website {
+  1294→  background: var(--danger-color);
+  1295→  color: white;
+  1296→  border: none;
+  1297→  border-radius: 6px;
+  1298→  width: 32px;
+  1299→  height: 32px;
+  1300→  cursor: pointer;
+  1301→  display: flex;
+  1302→  align-items: center;
+  1303→  justify-content: center;
+  1304→  transition: all 0.3s ease;
+  1305→}
+  1306→
+  1307→.remove-website:hover {
+  1308→  background: #dc2626;
+  1309→  transform: scale(1.1);
+  1310→}
+  1311→
+  1312→.website-link .form-row {
+  1313→  display: grid;
+  1314→  grid-template-columns: 1fr 1fr;
+  1315→  gap: 12px;
+  1316→}
+  1317→
+  1318→.website-link .form-group {
+  1319→  min-width: auto;
+  1320→}
+  1321→
+  1322→.form-actions {
+  1323→  display: flex;
+  1324→  gap: 12px;
+  1325→  margin-top: 32px;
+  1326→  flex-wrap: wrap;
+  1327→}
+  1328→
+  1329→/* Buttons */
+  1330→.btn {
+  1331→  padding: 12px 20px;
+  1332→  border: none;
+  1333→  border-radius: 8px;
+  1334→  cursor: pointer;
+  1335→  font-weight: 600;
+  1336→  text-decoration: none;
+  1337→  display: inline-flex;
+  1338→  align-items: center;
+  1339→  gap: 8px;
+  1340→  transition: all 0.3s ease;
+  1341→  font-size: 14px;
+  1342→  font-family: inherit;
+  1343→  border: 2px solid transparent;
+  1344→}
+  1345→
+  1346→.btn.primary {
+  1347→  background: var(--primary-color);
+  1348→  color: white;
+  1349→}
+  1350→
+  1351→.btn.primary:hover {
+  1352→  background: var(--primary-dark);
+  1353→  transform: translateY(-2px);
+  1354→  box-shadow: var(--shadow);
+  1355→}
+  1356→
+  1357→.btn.secondary {
+  1358→  background: var(--card-bg);
+  1359→  color: var(--text-color);
+  1360→  border-color: var(--border-color);
+  1361→}
+  1362→
+  1363→.btn.secondary:hover {
+  1364→  background: var(--bg-color);
+  1365→  transform: translateY(-2px);
+  1366→  box-shadow: var(--shadow);
+  1367→}
+  1368→
+  1369→.btn.success {
+  1370→  background: var(--success-color);
+  1371→  color: white;
+  1372→}
+  1373→
+  1374→.btn.success:hover {
+  1375→  background: #059669;
+  1376→  transform: translateY(-2px);
+  1377→}
+  1378→
+  1379→.btn.danger {
+  1380→  background: var(--danger-color);
+  1381→  color: white;
+  1382→}
+  1383→
+  1384→.btn.danger:hover {
+  1385→  background: #dc2626;
+  1386→  transform: translateY(-2px);
+  1387→}
+  1388→
+  1389→.btn.warning {
+  1390→  background: var(--warning-color);
+  1391→  color: #000;
+  1392→}
+  1393→
+  1394→.btn.warning:hover {
+  1395→  background: #d97706;
+  1396→  transform: translateY(-2px);
+  1397→}
+  1398→
+  1399→.btn.small {
+  1400→  padding: 8px 16px;
+  1401→  font-size: 13px;
+  1402→}
+  1403→
+  1404→/* Manage List */
+  1405→.manage-header {
+  1406→  display: flex;
+  1407→  justify-content: space-between;
+  1408→  align-items: center;
+  1409→  margin-bottom: 24px;
+  1410→  flex-wrap: wrap;
+  1411→  gap: 16px;
+  1412→}
+  1413→
+  1414→.manage-controls {
+  1415→  display: flex;
+  1416→  gap: 12px;
+  1417→  align-items: center;
+  1418→}
+  1419→
+  1420→.manage-list {
+  1421→  display: grid;
+  1422→  gap: 16px;
+  1423→}
+  1424→
+  1425→.manage-item {
+  1426→  display: flex;
+  1427→  justify-content: space-between;
+  1428→  align-items: center;
+  1429→  padding: 16px;
+  1430→  background: var(--bg-color);
+  1431→  border-radius: 12px;
+  1432→  border: 1px solid var(--border-color);
+  1433→  transition: all 0.3s ease;
+  1434→}
+  1435→
+  1436→.manage-item:hover {
+  1437→  box-shadow: var(--shadow);
+  1438→  transform: translateY(-2px);
+  1439→}
+  1440→
+  1441→.manage-item.selected {
+  1442→  background: rgba(99, 102, 241, 0.1);
+  1443→  border-color: var(--primary-color);
+  1444→}
+  1445→
+  1446→.manage-item-info {
+  1447→  display: flex;
+  1448→  align-items: center;
+  1449→  gap: 16px;
+  1450→}
+  1451→
+  1452→.manage-item-thumb {
+  1453→  width: 60px;
+  1454→  height: 60px;
+  1455→  object-fit: cover;
+  1456→  border-radius: 8px;
+  1457→  border: 2px solid var(--border-color);
+  1458→}
+  1459→
+  1460→.manage-item-details h4 {
+  1461→  margin: 0 0 4px 0;
+  1462→  color: var(--text-color);
+  1463→}
+  1464→
+  1465→.manage-item-details .category {
+  1466→  font-size: 12px;
+  1467→  color: var(--text-muted);
+  1468→  text-transform: uppercase;
+  1469→  font-weight: 600;
+  1470→}
+  1471→
+  1472→.manage-item-details .small-muted {
+  1473→  font-size: 12px;
+  1474→  color: var(--text-muted);
+  1475→}
+  1476→
+  1477→.manage-item-actions {
+  1478→  display: flex;
+  1479→  gap: 8px;
+  1480→}
+  1481→
+  1482→.manage-item-checkbox {
+  1483→  margin-right: 12px;
+  1484→}
+  1485→
+  1486→.tags-small {
+  1487→  display: flex;
+  1488→  gap: 4px;
+  1489→  flex-wrap: wrap;
+  1490→  margin-top: 4px;
+  1491→}
+  1492→
+  1493→.tag-small {
+  1494→  background: var(--primary-color);
+  1495→  color: white;
+  1496→  padding: 2px 6px;
+  1497→  border-radius: 10px;
+  1498→  font-size: 10px;
+  1499→}
+  1500→
+  1501→/* Batch Actions */
+  1502→.batch-select {
+  1503→  padding: 8px 12px;
+  1504→  border: 1px solid var(--border-color);
+  1505→  border-radius: 6px;
+  1506→  background: var(--card-bg);
+  1507→  color: var(--text-color);
+  1508→}
+  1509→
+  1510→/* Analytics */
+  1511→.analytics-dashboard {
+  1512→  display: flex;
+  1513→  flex-direction: column;
+  1514→  gap: 24px;
+  1515→}
+  1516→
+  1517→.stats-grid {
+  1518→  display: grid;
+  1519→  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  1520→  gap: 16px;
+  1521→}
+  1522→
+  1523→.stat-card {
+  1524→  background: var(--bg-color);
+  1525→  padding: 20px;
+  1526→  border-radius: 12px;
+  1527→  border: 1px solid var(--border-color);
+  1528→  text-align: center;
+  1529→}
+  1530→
+  1531→.stat-number {
+  1532→  font-size: 2rem;
+  1533→  font-weight: 800;
+  1534→  color: var(--primary-color);
+  1535→  margin: 8px 0;
+  1536→}
+  1537→
+  1538→.stat-trend {
+  1539→  font-size: 12px;
+  1540→  font-weight: 600;
+  1541→}
+  1542→
+  1543→.stat-trend.up {
+  1544→  color: var(--success-color);
+  1545→}
+  1546→
+  1547→.stat-trend.down {
+  1548→  color: var(--danger-color);
+  1549→}
+  1550→
+  1551→.stat-subtitle {
+  1552→  font-size: 12px;
+  1553→  color: var(--text-muted);
+  1554→}
+  1555→
+  1556→.charts-section {
+  1557→  display: grid;
+  1558→  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  1559→  gap: 24px;
+  1560→}
+  1561→
+  1562→.chart-container {
+  1563→  background: var(--bg-color);
+  1564→  padding: 20px;
+  1565→  border-radius: 12px;
+  1566→  border: 1px solid var(--border-color);
+  1567→}
+  1568→
+  1569→.chart {
+  1570→  height: 200px;
+  1571→  background: var(--card-bg);
+  1572→  border-radius: 8px;
+  1573→  display: flex;
+  1574→  align-items: center;
+  1575→  justify-content: center;
+  1576→  color: var(--text-muted);
+  1577→}
+  1578→
+  1579→.mini-chart {
+  1580→  height: 60px;
+  1581→  background: var(--card-bg);
+  1582→  border-radius: 4px;
+  1583→  display: flex;
+  1584→  align-items: center;
+  1585→  justify-content: center;
+  1586→  color: var(--text-muted);
+  1587→  font-size: 12px;
+  1588→}
+  1589→
+  1590→.activity-list {
+  1591→  display: flex;
+  1592→  flex-direction: column;
+  1593→  gap: 8px;
+  1594→}
+  1595→
+  1596→.activity-item {
+  1597→  display: flex;
+  1598→  align-items: center;
+  1599→  gap: 8px;
+  1600→  font-size: 12px;
+  1601→  color: var(--text-muted);
+  1602→}
+  1603→
+  1604→/* Settings */
+  1605→.settings-section {
+  1606→  background: var(--bg-color);
+  1607→  padding: 20px;
+  1608→  border-radius: 12px;
+  1609→  margin-bottom: 20px;
+  1610→  border: 1px solid var(--border-color);
+  1611→}
+  1612→
+  1613→.setting-toggle {
+  1614→  display: flex;
+  1615→  justify-content: space-between;
+  1616→  align-items: center;
+  1617→  margin-bottom: 12px;
+  1618→}
+  1619→
+  1620→.setting-toggle label {
+  1621→  font-weight: 600;
+  1622→}
+  1623→
+  1624→.shortcuts-list {
+  1625→  display: flex;
+  1626→  flex-direction: column;
+  1627→  gap: 12px;
+  1628→}
+  1629→
+  1630→.shortcut-item {
+  1631→  display: flex;
+  1632→  justify-content: space-between;
+  1633→  align-items: center;
+  1634→  padding: 8px 0;
+  1635→  border-bottom: 1px solid var(--border-color);
+  1636→}
+  1637→
+  1638→.shortcut-key {
+  1639→  background: var(--card-bg);
+  1640→  padding: 4px 8px;
+  1641→  border-radius: 4px;
+  1642→  border: 1px solid var(--border-color);
+  1643→  font-family: monospace;
+  1644→  font-size: 12px;
+  1645→}
+  1646→
+  1647→.shortcut-desc {
+  1648→  color: var(--text-muted);
+  1649→  font-size: 14px;
+  1650→}
+  1651→
+  1652→/* Import/Export Sections */
+  1653→.import-section {
+  1654→  background: var(--bg-color);
+  1655→  padding: 20px;
+  1656→  border-radius: 12px;
+  1657→  margin-bottom: 20px;
+  1658→  border: 1px solid var(--border-color);
+  1659→}
+  1660→
+  1661→.import-section h3 {
+  1662→  margin-bottom: 8px;
+  1663→  display: flex;
+  1664→  align-items: center;
+  1665→  gap: 8px;
+  1666→}
+  1667→
+  1668→.import-section p {
+  1669→  color: var(--text-muted);
+  1670→  margin-bottom: 16px;
+  1671→}
+  1672→
+  1673→.export-options, .import-options, .cloud-options {
+  1674→  display: flex;
+  1675→  gap: 12px;
+  1676→  flex-wrap: wrap;
+  1677→}
+  1678→
+  1679→.danger-zone {
+  1680→  border-color: var(--danger-color);
+  1681→  background: rgba(239, 68, 68, 0.05);
+  1682→}
+  1683→
+  1684→/* Context Menu */
+  1685→.context-menu {
+  1686→  position: fixed;
+  1687→  background: var(--card-bg);
+  1688→  border-radius: 8px;
+  1689→  box-shadow: var(--shadow-lg);
+  1690→  padding: 8px 0;
+  1691→  z-index: 1000;
+  1692→  display: none;
+  1693→  min-width: 150px;
+  1694→  border: 1px solid var(--border-color);
+  1695→}
+  1696→
+  1697→.context-menu.active {
+  1698→  display: block;
+  1699→  animation: fadeIn 0.2s ease;
+  1700→}
+  1701→
+  1702→.context-item {
+  1703→  padding: 8px 16px;
+  1704→  cursor: pointer;
+  1705→  display: flex;
+  1706→  align-items: center;
+  1707→  gap: 8px;
+  1708→  transition: background 0.3s ease;
+  1709→}
+  1710→
+  1711→.context-item:hover {
+  1712→  background: var(--bg-color);
+  1713→}
+  1714→
+  1715→.context-divider {
+  1716→  height: 1px;
+  1717→  background: var(--border-color);
+  1718→  margin: 4px 0;
+  1719→}
+  1720→
+  1721→/* Toast Notifications */
+  1722→.toast-container {
+  1723→  position: fixed;
+  1724→  top: 20px;
+  1725→  right: 20px;
+  1726→  z-index: 1000;
+  1727→  display: flex;
+  1728→  flex-direction: column;
+  1729→  gap: 10px;
+  1730→}
+  1731→
+  1732→.toast {
+  1733→  padding: 16px 20px;
+  1734→  border-radius: 8px;
+  1735→  color: white;
+  1736→  font-weight: 600;
+  1737→  box-shadow: var(--shadow-lg);
+  1738→  animation: slideIn 0.3s ease;
+  1739→  display: flex;
+  1740→  align-items: center;
+  1741→  gap: 10px;
+  1742→  min-width: 300px;
+  1743→}
+  1744→
+  1745→.toast.success {
+  1746→  background: var(--success-color);
+  1747→}
+  1748→
+  1749→.toast.error {
+  1750→  background: var(--danger-color);
+  1751→}
+  1752→
+  1753→.toast.warning {
+  1754→  background: var(--warning-color);
+  1755→  color: #000;
+  1756→}
+  1757→
+  1758→.toast.info {
+  1759→  background: var(--info-color);
+  1760→}
+  1761→
+  1762→.toast-close {
+  1763→  background: none;
+  1764→  border: none;
+  1765→  color: inherit;
+  1766→  margin-left: auto;
+  1767→  cursor: pointer;
+  1768→  opacity: 0.7;
+  1769→}
+  1770→
+  1771→.toast-close:hover {
+  1772→  opacity: 1;
+  1773→}
+  1774→
+  1775→@keyframes slideIn {
+  1776→  from {
+  1777→    transform: translateX(100%);
+  1778→    opacity: 0;
+  1779→  }
+  1780→  to {
+  1781→    transform: translateX(0);
+  1782→    opacity: 1;
+  1783→  }
+  1784→}
+  1785→
+  1786→/* Footer */
+  1787→footer {
+  1788→  margin-top: 60px;
+  1789→  padding: 30px 20px;
+  1790→  color: var(--text-muted);
+  1791→  border-top: 1px solid var(--border-color);
+  1792→}
+  1793→
+  1794→.footer-content {
+  1795→  max-width: 1200px;
+  1796→  margin: 0 auto;
+  1797→  display: flex;
+  1798→  justify-content: space-between;
+  1799→  align-items: center;
+  1800→  flex-wrap: wrap;
+  1801→  gap: 16px;
+  1802→}
+  1803→
+  1804→.footer-links {
+  1805→  display: flex;
+  1806→  gap: 20px;
+  1807→}
+  1808→
+  1809→.footer-link {
+  1810→  color: var(--text-muted);
+  1811→  text-decoration: none;
+  1812→  transition: color 0.3s ease;
+  1813→}
+  1814→
+  1815→.footer-link:hover {
+  1816→  color: var(--primary-color);
+  1817→}
+  1818→
+  1819→/* Back to Top */
+  1820→.back-to-top {
+  1821→  position: fixed;
+  1822→  bottom: 30px;
+  1823→  right: 30px;
+  1824→  background: var(--primary-color);
+  1825→  color: white;
+  1826→  border: none;
+  1827→  border-radius: 50%;
+  1828→  width: 56px;
+  1829→  height: 56px;
+  1830→  cursor: pointer;
+  1831→  display: flex;
+  1832→  align-items: center;
+  1833→  justify-content: center;
+  1834→  transition: all 0.3s ease;
+  1835→  box-shadow: var(--shadow-lg);
+  1836→  opacity: 0;
+  1837→  visibility: hidden;
+  1838→  z-index: 1000;
+  1839→  font-size: 18px;
+  1840→}
+  1841→
+  1842→.back-to-top.visible {
+  1843→  opacity: 1;
+  1844→  visibility: visible;
+  1845→}
+  1846→
+  1847→.back-to-top:hover {
+  1848→  background: var(--primary-dark);
+  1849→  transform: translateY(-3px) scale(1.1);
+  1850→  box-shadow: var(--shadow-hover);
+  1851→}
+  1852→
+  1853→/* Night Mode */
+  1854→body.night-mode {
+  1855→  --text-color: #f3f4f6;
+  1856→  --text-muted: #9ca3af;
+  1857→  --bg-color: #111827;
+  1858→  --card-bg: #1f2937;
+  1859→  --border-color: #374151;
+  1860→  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  1861→  --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  1862→  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  1863→}
+  1864→
+  1865→body.night-mode .card .name {
+  1866→  color: #f3f4f6;
+  1867→}
+  1868→
+  1869→body.night-mode .form-group label {
+  1870→  color: #f3f4f6;
+  1871→}
+  1872→
+  1873→body.night-mode .website-link {
+  1874→  background: #374151;
+  1875→}
+  1876→
+  1877→body.night-mode .manage-item {
+  1878→  background: #374151;
+  1879→}
+  1880→
+  1881→body.night-mode .import-section {
+  1882→  background: #374151;
+  1883→}
+  1884→
+  1885→body.night-mode .stat-item {
+  1886→  background: #1f2937;
+  1887→}
+  1888→
+  1889→body.night-mode .settings-section {
+  1890→  background: #374151;
+  1891→}
+  1892→
+  1893→body.night-mode .stat-card {
+  1894→  background: #374151;
+  1895→}
+  1896→
+  1897→body.night-mode .chart-container {
+  1898→  background: #374151;
+  1899→}
+  1900→
+  1901→body.night-mode .category-badge {
+  1902→  background: #374151;
+  1903→}
+  1904→
+  1905→body.night-mode .suggestions-dropdown {
+  1906→  background: #374151;
+  1907→}
+  1908→
+  1909→body.night-mode .suggestion-item:hover {
+  1910→  background: #4b5563;
+  1911→}
+  1912→
+  1913→/* Card Size Settings */
+  1914→body[data-card-size="small"] .card {
+  1915→  transform: scale(0.9);
+  1916→}
+  1917→
+  1918→body[data-card-size="large"] .card {
+  1919→  transform: scale(1.1);
+  1920→}
+  1921→
+  1922→/* Utility Classes */
+  1923→.hidden {
+  1924→  display: none !important;
+  1925→}
+  1926→
+  1927→/* Backdrop used when panels are open */
+  1928→.panel-backdrop {
+  1929→  position: fixed;
+  1930→  top: 0;
+  1931→  left: 0;
+  1932→  right: 0;
+  1933→  bottom: 0;
+  1934→  background: rgba(0, 0, 0, 0.35);
+  1935→  z-index: 900;
+  1936→  opacity: 0;
+  1937→  visibility: hidden;
+  1938→  transition: opacity 180ms ease;
+  1939→}
+  1940→.panel-backdrop:not(.hidden) { opacity: 1; visibility: visible; }
+  1941→
+  1942→/* Card overlay quick actions */
+  1943→.card { position: relative; overflow: hidden; }
+  1944→.card-overlay {
+  1945→  position: absolute;
+  1946→  left: 0; right: 0; bottom: 0;
+  1947→  display: flex; gap: 8px; justify-content: center; padding: 8px;
+  1948→  background: linear-gradient(transparent, rgba(0,0,0,0.5));
+  1949→  opacity: 0; transform: translateY(8px);
+  1950→  transition: opacity 160ms ease, transform 160ms ease;
+  1951→}
+  1952→.card:hover .card-overlay, .card:focus-within .card-overlay { opacity: 1; transform: translateY(0); }
+  1953→.card-overlay button { background: rgba(255,255,255,0.9); border-radius: 8px; border: none; padding: 8px; cursor: pointer; }
+  1954→.card-overlay button i { color: var(--text-color); }
+  1955→
+  1956→.small-muted {
+  1957→  font-size: 12px;
+  1958→  color: var(--text-muted);
+  1959→}
+  1960→
+  1961→/* Responsive Design */
+  1962→@media (max-width: 768px) {
+  1963→  body {
+  1964→    padding: 16px;
+  1965→  }
+  1966→  
+  1967→  .header-top {
+  1968→    flex-direction: column;
+  1969→    align-items: center;
+  1970→    text-align: center;
+  1971→  }
+  1972→  
+  1973→  .header-controls {
+  1974→    align-self: center;
+  1975→    margin-top: 0;
+  1976→  }
+  1977→  
+  1978→  .header-brand h1 {
+  1979→    font-size: 2rem;
+  1980→  }
+  1981→  
+  1982→  .stats-bar {
+  1983→    gap: 12px;
+  1984→  }
+  1985→  
+  1986→  .stat-item {
+  1987→    padding: 6px 12px;
+  1988→    font-size: 14px;
+  1989→  }
+  1990→  
+  1991→  .advanced-filters {
+  1992→    flex-direction: column;
+  1993→    align-items: stretch;
+  1994→    gap: 12px;
+  1995→  }
+  1996→  
+  1997→  .filter-group {
+  1998→    flex-direction: column;
+  1999→    align-items: stretch;
+  2000→  }
+
+[showing lines 1-2000 of 2279; use offset=2001 with limit to continue reading]
